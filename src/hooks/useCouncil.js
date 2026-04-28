@@ -145,7 +145,7 @@ export function useCouncil({ user, apiKey }) {
     async function load() {
       const { data, error } = await supabase
         .from('sessions').select().eq('user_id', user.id)
-        .order('created_at', { ascending: false }).limit(50);
+        .order('created_at', { ascending: false });
 
       if (!error && data) {
         setSessionLog(data.map(s => ({
