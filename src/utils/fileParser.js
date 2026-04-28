@@ -19,6 +19,7 @@ export async function parseFile(file) {
     if (ext === 'pdf') return await parsePDF(file);
     if (ext === 'docx' || ext === 'doc') return await parseWord(file);
     if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') return await parseExcel(file, ext);
+    if (ext === 'txt' || ext === 'md' || ext === 'json') return await parsePlainText(file, ext);
     throw new Error(`Unsupported type: .${ext}`);
   } catch (err) {
     return { name, type: ext, content: '', descriptor: `${name} — failed to parse`, error: err.message };
@@ -66,6 +67,21 @@ async function parseWord(file) {
     type: 'docx',
     content,
     descriptor: `${file.name} — Word document, ~${wordCount.toLocaleString()} words${truncated ? ' (truncated)' : ''}`,
+    truncated,
+  };
+}
+
+async function parsePlainText(file, ext) {
+  const raw = await file.text();
+  const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
+  const truncated = raw.length > MAX_CHARS;
+  const content = truncated ? raw.slice(0, MAX_CHARS) + '\n[... content truncated ...]' : raw;
+  const typeLabel = ext === 'md' ? 'Markdown' : ext === 'json' ? 'JSON' : 'Text file';
+  return {
+    name: file.name,
+    type: ext,
+    content,
+    descriptor: `${file.name} — ${typeLabel}, ~${wordCount.toLocaleString()} words${truncated ? ' (truncated)' : ''}`,
     truncated,
   };
 }

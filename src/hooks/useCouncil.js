@@ -1,5 +1,6 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { DEFAULT_COUNCILLORS, CHAIRPERSON_SYSTEM_PROMPT, SYNTHESIZER_SYSTEM_PROMPT, parseSynthesizerOutput } from '../data/defaultCouncillors';
+import { supabase } from '../lib/supabase';
 
 export const MODELS = [
   { id: 'claude-opus-4-7',           label: 'Opus 4.7',   description: 'Most capable' },
@@ -7,34 +8,19 @@ export const MODELS = [
   { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5',  description: 'Fastest' },
 ];
 
-const STORAGE_KEY   = 'council_councillors';
-const MODEL_KEY     = 'council_model';
-const DEFAULT_MODEL = 'claude-sonnet-4-6';
-
-function loadCouncillors() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
-  } catch {}
-  return DEFAULT_COUNCILLORS;
-}
-
-function saveCouncillors(councillors) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(councillors)); } catch {}
-}
+const MODEL_KEY = 'council_model';
 
 function loadModel() {
   try {
-    const saved = localStorage.getItem(MODEL_KEY);
-    if (saved && MODELS.find(m => m.id === saved)) return saved;
+    const s = localStorage.getItem(MODEL_KEY);
+    if (s && MODELS.find(m => m.id === s)) return s;
   } catch {}
-  return DEFAULT_MODEL;
+  return 'claude-sonnet-4-6';
 }
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// messages: string (single-turn) or array of {role, content} (multi-turn)
-async function callAPI(model, systemPrompt, messages) {
+async function callAPI(apiKey, model, systemPrompt, messages) {
   const normalized = typeof messages === 'string'
     ? [{ role: 'user', content: messages }]
     : messages;
@@ -43,7 +29,7 @@ async function callAPI(model, systemPrompt, messages) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
+      'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true',
     },
@@ -51,15 +37,11 @@ async function callAPI(model, systemPrompt, messages) {
   });
 
   if (response.status === 429) {
-    // Use the API's own reset timestamp if CORS exposes it, otherwise wait 30s
     const resetHeader = response.headers.get('anthropic-ratelimit-tokens-reset');
     let retryAfterMs = 30000;
-    if (resetHeader) {
-      retryAfterMs = Math.max(1000, new Date(resetHeader).getTime() - Date.now() + 500);
-    }
+    if (resetHeader) retryAfterMs = Math.max(1000, new Date(resetHeader).getTime() - Date.now() + 500);
     const err = new Error(`Rate limited — will retry after ${Math.round(retryAfterMs / 1000)}s`);
-    err.status = 429;
-    err.retryAfterMs = retryAfterMs;
+    err.status = 429; err.retryAfterMs = retryAfterMs;
     throw err;
   }
 
@@ -75,64 +57,147 @@ async function callAPI(model, systemPrompt, messages) {
   return data.content[0].text;
 }
 
-async function callAPIWithRetry(model, systemPrompt, messages, maxRetries = 3) {
+async function callAPIWithRetry(apiKey, model, systemPrompt, messages, maxRetries = 3) {
   let lastErr;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      return await callAPI(model, systemPrompt, messages);
+      return await callAPI(apiKey, model, systemPrompt, messages);
     } catch (err) {
       lastErr = err;
       if (err.status !== 429 || attempt === maxRetries - 1) throw err;
-      // Wait for the exact reset time the API advertises, or 30s by default
       await sleep(err.retryAfterMs ?? 30000);
     }
   }
   throw lastErr;
 }
 
-export function useCouncil() {
-  const [councillors, setCouncillors]             = useState(loadCouncillors);
-  const [model, setModelState]                    = useState(loadModel);
-  const [isLoading, setIsLoading]                 = useState(false);
-  const [currentQuestion, setCurrentQuestion]     = useState('');
+/* ── DB helpers ─────────────────────────────────────────────── */
+
+function toDbRow(userId, councillor, sortOrder) {
+  return {
+    user_id:       userId,
+    councillor_id: councillor.id,
+    name:          councillor.name,
+    emoji:         councillor.emoji,
+    system_prompt: councillor.systemPrompt,
+    active:        councillor.active !== false,
+    sort_order:    sortOrder,
+  };
+}
+
+function fromDbRow(row) {
+  return {
+    id:           row.councillor_id,
+    name:         row.name,
+    emoji:        row.emoji,
+    systemPrompt: row.system_prompt,
+    active:       row.active,
+  };
+}
+
+async function upsertCouncillors(userId, councillors) {
+  const rows = councillors.map((c, i) => toDbRow(userId, c, i));
+  await supabase.from('councillors').upsert(rows, { onConflict: 'user_id,councillor_id' });
+}
+
+async function deleteCouncillor(userId, councillorId) {
+  await supabase.from('councillors').delete()
+    .eq('user_id', userId).eq('councillor_id', councillorId);
+}
+
+/* ── Hook ────────────────────────────────────────────────────── */
+
+export function useCouncil({ user, apiKey }) {
+  const [councillors, setCouncillors]                 = useState([]);
+  const [model, setModelState]                        = useState(loadModel);
+  const [isLoading, setIsLoading]                     = useState(false);
+  const [currentQuestion, setCurrentQuestion]         = useState('');
   const [councillorResponses, setCouncillorResponses] = useState({});
   const [chairpersonResponse, setChairpersonResponse] = useState(null);
   const [chairpersonReplies, setChairpersonReplies]   = useState([]);
-  const [synthesis, setSynthesis]                 = useState(null);
-  const [sessionLog, setSessionLog]               = useState([]);
+  const [synthesis, setSynthesis]                     = useState(null);
+  const [sessionLog, setSessionLog]                   = useState([]);
 
-  // Stores the full conversation so follow-ups have context
   const chairpersonThreadRef = useRef([]);
 
-  const updateCouncillors = useCallback((next) => {
-    setCouncillors(next);
-    saveCouncillors(next);
-  }, []);
+  // ── Load councillors from DB ──────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+    async function load() {
+      const { data, error } = await supabase
+        .from('councillors').select().eq('user_id', user.id).order('sort_order');
 
-  const addCouncillor = useCallback((councillor) => {
-    updateCouncillors([...councillors, { id: `custom-${Date.now()}`, ...councillor }]);
-  }, [councillors, updateCouncillors]);
+      if (!error && data && data.length > 0) {
+        setCouncillors(data.map(fromDbRow));
+      } else {
+        // First time: seed with defaults
+        const defaults = DEFAULT_COUNCILLORS;
+        setCouncillors(defaults);
+        await upsertCouncillors(user.id, defaults);
+      }
+    }
+    load();
+  }, [user?.id]);
 
-  const updateCouncillor = useCallback((id, updates) => {
-    updateCouncillors(councillors.map(c => c.id === id ? { ...c, ...updates } : c));
-  }, [councillors, updateCouncillors]);
+  // ── Load sessions from DB ─────────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+    async function load() {
+      const { data, error } = await supabase
+        .from('sessions').select().eq('user_id', user.id)
+        .order('created_at', { ascending: false }).limit(50);
 
-  const removeCouncillor = useCallback((id) => {
-    if (councillors.length <= 1) return;
-    updateCouncillors(councillors.filter(c => c.id !== id));
-  }, [councillors, updateCouncillors]);
-
-  const resetToDefaults = useCallback(() => {
-    updateCouncillors(DEFAULT_COUNCILLORS);
-  }, [updateCouncillors]);
+      if (!error && data) {
+        setSessionLog(data.map(s => ({
+          id: s.id,
+          question: s.question,
+          timestamp: new Date(s.created_at),
+          results: s.results,
+          councillorSnapshot: s.councillor_snapshot,
+          chairpersonContent: s.chairperson_content,
+          attachedFiles: s.attached_files,
+        })));
+      }
+    }
+    load();
+  }, [user?.id]);
 
   const setModel = useCallback((id) => {
     setModelState(id);
     try { localStorage.setItem(MODEL_KEY, id); } catch {}
   }, []);
 
+  // ── Councillor management ─────────────────────────────────────
+  const addCouncillor = useCallback(async (councillor) => {
+    const next = [...councillors, councillor];
+    setCouncillors(next);
+    if (user) await upsertCouncillors(user.id, next);
+  }, [councillors, user]);
+
+  const updateCouncillor = useCallback(async (id, updates) => {
+    const next = councillors.map(c => c.id === id ? { ...c, ...updates } : c);
+    setCouncillors(next);
+    if (user) await upsertCouncillors(user.id, next);
+  }, [councillors, user]);
+
+  const removeCouncillor = useCallback(async (id) => {
+    if (councillors.length <= 1) return;
+    const next = councillors.filter(c => c.id !== id);
+    setCouncillors(next);
+    if (user) await deleteCouncillor(user.id, id);
+  }, [councillors, user]);
+
+  const resetToDefaults = useCallback(async () => {
+    setCouncillors(DEFAULT_COUNCILLORS);
+    if (user) {
+      await supabase.from('councillors').delete().eq('user_id', user.id);
+      await upsertCouncillors(user.id, DEFAULT_COUNCILLORS);
+    }
+  }, [user]);
+
+  // ── Submit question ───────────────────────────────────────────
   const submitQuestion = useCallback(async (question, attachedFiles = []) => {
-    if (!question.trim() || isLoading) return;
+    if (!question.trim() || isLoading || !apiKey) return;
 
     setIsLoading(true);
     setCurrentQuestion(question);
@@ -141,12 +206,8 @@ export function useCouncil() {
     setSynthesis({ status: 'loading' });
     chairpersonThreadRef.current = [];
 
-    // active === false explicitly opts out; undefined/true both count as active
-    // (handles councillors loaded from localStorage before the active field existed)
     const activeCouncillors = councillors.filter(c => c.active !== false);
 
-    // --- Synthesizer step ---
-    // Builds the raw input for the synthesizer: question + raw file content
     const rawFileBlock = attachedFiles.length > 0
       ? attachedFiles.map(f => `[${f.name}]\n${f.content}`).join('\n\n')
       : null;
@@ -159,13 +220,12 @@ export function useCouncil() {
     let fileContext = null;
 
     try {
-      const synthOutput = await callAPIWithRetry(model, SYNTHESIZER_SYSTEM_PROMPT, synthInput);
+      const synthOutput = await callAPIWithRetry(apiKey, model, SYNTHESIZER_SYSTEM_PROMPT, synthInput);
       const parsed = parseSynthesizerOutput(synthOutput);
       trimmedQuestion = parsed.trimmedQuestion || question;
       fileContext = parsed.fileContext;
       setSynthesis({ status: 'ready', trimmedQuestion, fileContext });
     } catch {
-      // Synthesizer failed — fall back to original question, skip file content
       setSynthesis({ status: 'error', trimmedQuestion: question, fileContext: null });
     }
 
@@ -173,17 +233,15 @@ export function useCouncil() {
     activeCouncillors.forEach(c => { initial[c.id] = { status: 'waiting', content: '' }; });
     setCouncillorResponses(initial);
 
-    // Build what each councillor receives: trimmed question + compact file context (no raw files)
     const councillorContent = [
       fileContext ? `Context:\n${fileContext}` : null,
       trimmedQuestion,
     ].filter(Boolean).join('\n\n');
 
-    // Run sequentially to stay within per-minute token limits
     const results = [];
     for (const councillor of activeCouncillors) {
       try {
-        const content = await callAPIWithRetry(model, councillor.systemPrompt, councillorContent);
+        const content = await callAPIWithRetry(apiKey, model, councillor.systemPrompt, councillorContent);
         setCouncillorResponses(prev => ({ ...prev, [councillor.id]: { status: 'ready', content } }));
         results.push({ id: councillor.id, name: councillor.name, emoji: councillor.emoji, content, error: false });
       } catch (err) {
@@ -206,72 +264,72 @@ export function useCouncil() {
     ].filter(Boolean).join('\n\n');
 
     try {
-      const chairContent = await callAPIWithRetry(model, CHAIRPERSON_SYSTEM_PROMPT, chairUserMessage);
+      const chairContent = await callAPIWithRetry(apiKey, model, CHAIRPERSON_SYSTEM_PROMPT, chairUserMessage);
       setChairpersonResponse({ status: 'ready', content: chairContent });
 
-      // Seed the thread for future follow-ups
       chairpersonThreadRef.current = [
         { role: 'user', content: chairUserMessage },
         { role: 'assistant', content: chairContent },
       ];
 
-      setSessionLog(prev => [{
+      // Persist session to DB
+      const sessionPayload = {
+        question,
+        councillor_snapshot: activeCouncillors.map(c => ({ id: c.id, name: c.name, emoji: c.emoji })),
+        results,
+        chairperson_content: chairContent,
+        attached_files: attachedFiles.map(f => ({ name: f.name, type: f.type, descriptor: f.descriptor })),
+      };
+
+      const newLogEntry = {
         id: Date.now(),
         question,
         timestamp: new Date(),
         results,
-        councillorSnapshot: activeCouncillors.map(c => ({ id: c.id, name: c.name, emoji: c.emoji })),
+        councillorSnapshot: sessionPayload.councillor_snapshot,
         chairpersonContent: chairContent,
-        attachedFiles: attachedFiles.map(f => ({ name: f.name, type: f.type, descriptor: f.descriptor })),
-      }, ...prev]);
+        attachedFiles: sessionPayload.attached_files,
+      };
+
+      if (user) {
+        const { data: inserted } = await supabase
+          .from('sessions').insert({ user_id: user.id, ...sessionPayload }).select('id').single();
+        if (inserted) newLogEntry.id = inserted.id;
+      }
+
+      setSessionLog(prev => [newLogEntry, ...prev]);
     } catch (err) {
       setChairpersonResponse({ status: 'error', content: err.message });
     }
 
     setIsLoading(false);
-  }, [councillors, model, isLoading]);
+  }, [councillors, model, isLoading, apiKey, user]);
 
+  // ── Follow-up reply ───────────────────────────────────────────
   const askFollowUp = useCallback(async (question) => {
-    if (!question.trim() || isLoading) return;
+    if (!question.trim() || isLoading || !apiKey) return;
 
     const id = Date.now();
     setChairpersonReplies(prev => [...prev, { id, question, content: '', status: 'loading' }]);
 
-    // Append user message to thread
     const updatedThread = [
       ...chairpersonThreadRef.current,
       { role: 'user', content: question },
     ];
 
     try {
-      const content = await callAPIWithRetry(model, CHAIRPERSON_SYSTEM_PROMPT, updatedThread);
+      const content = await callAPIWithRetry(apiKey, model, CHAIRPERSON_SYSTEM_PROMPT, updatedThread);
       chairpersonThreadRef.current = [...updatedThread, { role: 'assistant', content }];
-      setChairpersonReplies(prev =>
-        prev.map(r => r.id === id ? { ...r, content, status: 'ready' } : r)
-      );
+      setChairpersonReplies(prev => prev.map(r => r.id === id ? { ...r, content, status: 'ready' } : r));
     } catch (err) {
-      setChairpersonReplies(prev =>
-        prev.map(r => r.id === id ? { ...r, content: err.message, status: 'error' } : r)
-      );
+      setChairpersonReplies(prev => prev.map(r => r.id === id ? { ...r, content: err.message, status: 'error' } : r));
     }
-  }, [model, isLoading]);
+  }, [model, isLoading, apiKey]);
 
   return {
-    councillors,
-    model,
-    setModel,
-    isLoading,
-    synthesis,
-    currentQuestion,
-    councillorResponses,
-    chairpersonResponse,
-    chairpersonReplies,
-    sessionLog,
-    submitQuestion,
-    askFollowUp,
-    addCouncillor,
-    updateCouncillor,
-    removeCouncillor,
-    resetToDefaults,
+    councillors, model, setModel, isLoading, synthesis,
+    currentQuestion, councillorResponses, chairpersonResponse,
+    chairpersonReplies, sessionLog, submitQuestion, askFollowUp,
+    addCouncillor, updateCouncillor, removeCouncillor, resetToDefaults,
   };
 }

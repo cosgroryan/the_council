@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from './hooks/useAuth.jsx';
 import { useCouncil, MODELS } from './hooks/useCouncil';
+import AuthScreen from './components/AuthScreen';
+import UnlockScreen from './components/UnlockScreen';
+import AccountView from './components/AccountView';
 import QuestionInput from './components/QuestionInput';
 import CouncillorCard from './components/CouncillorCard';
 import CouncillorDrawer from './components/CouncillorDrawer';
@@ -9,9 +13,10 @@ import SessionLog from './components/SessionLog';
 import SynthesisPreview from './components/SynthesisPreview';
 
 const VIEWS = {
-  CHAMBER: 'chamber',
+  CHAMBER:     'chamber',
   SESSION_LOG: 'session-log',
-  PERSONAS: 'personas',
+  PERSONAS:    'personas',
+  ACCOUNT:     'account',
 };
 
 const THEME_KEY = 'council_theme';
@@ -21,20 +26,40 @@ function loadTheme() {
 }
 
 export default function App() {
-  const council = useCouncil();
-  const [view, setView] = useState(VIEWS.CHAMBER);
-  const [activeCouncillorId, setActiveCouncillorId] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState(loadTheme);
+  const { user, profile, apiKey, loading } = useAuth();
+  const [theme, setTheme]                 = useState(loadTheme);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     try { localStorage.setItem(THEME_KEY, theme); } catch {}
   }, [theme]);
 
-  function toggleTheme() {
-    setTheme(t => t === 'dark' ? 'light' : 'dark');
+  // Loading auth state
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-council-bg">
+        <div className="text-council-text-dim text-sm">Loading…</div>
+      </div>
+    );
   }
+
+  // Not logged in
+  if (!user) return <AuthScreen />;
+
+  // Logged in but API key not in session storage (tab was closed/reopened)
+  if (!apiKey) return <UnlockScreen />;
+
+  return <Chamber theme={theme} onToggleTheme={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} />;
+}
+
+function Chamber({ theme, onToggleTheme }) {
+  const { user, profile } = useAuth();
+  const { apiKey } = useAuth();
+  const council = useCouncil({ user, apiKey });
+
+  const [view, setView]                       = useState(VIEWS.CHAMBER);
+  const [activeCouncillorId, setActiveCouncillorId] = useState(null);
+  const [sidebarOpen, setSidebarOpen]         = useState(false);
 
   const activeCouncillor = council.councillors.find(c => c.id === activeCouncillorId) ?? null;
 
@@ -45,20 +70,15 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-council-bg overflow-hidden">
-      {/* Mobile sidebar backdrop */}
+      {/* Mobile backdrop */}
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-20 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/60 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside
-        className={`fixed lg:relative inset-y-0 left-0 z-30 w-56 flex flex-col bg-council-surface border-r border-council-border flex-shrink-0 transition-transform duration-300 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
-      >
+      <aside className={`fixed lg:relative inset-y-0 left-0 z-30 w-56 flex flex-col bg-council-surface border-r border-council-border flex-shrink-0 transition-transform duration-300 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
         {/* Logo */}
         <div className="px-5 py-5 border-b border-council-border">
           <div className="flex items-center gap-3">
@@ -66,7 +86,7 @@ export default function App() {
             <div>
               <div className="text-sm font-semibold text-council-text">The Council</div>
               <div className="text-xs text-council-text-dim">
-                {council.isLoading ? 'Deliberating...' : `${council.councillors.filter(c => c.active !== false).length} active`}
+                {council.isLoading ? 'Deliberating…' : `${council.councillors.filter(c => c.active !== false).length} active`}
               </div>
             </div>
           </div>
@@ -74,30 +94,21 @@ export default function App() {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          <NavItem
-            icon={<ChamberIcon />}
-            label="Chamber"
+          <NavItem icon={<ChamberIcon />} label="Chamber"
             active={view === VIEWS.CHAMBER}
-            onClick={() => { setView(VIEWS.CHAMBER); setSidebarOpen(false); }}
-          />
-          <NavItem
-            icon={<LogIcon />}
-            label="Session Log"
+            onClick={() => { setView(VIEWS.CHAMBER); setSidebarOpen(false); }} />
+          <NavItem icon={<LogIcon />} label="Session Log"
             active={view === VIEWS.SESSION_LOG}
             badge={council.sessionLog.length > 0 ? council.sessionLog.length : null}
-            onClick={() => { setView(VIEWS.SESSION_LOG); setSidebarOpen(false); }}
-          />
-          <NavItem
-            icon={<PersonasIcon />}
-            label="Personas"
+            onClick={() => { setView(VIEWS.SESSION_LOG); setSidebarOpen(false); }} />
+          <NavItem icon={<PersonasIcon />} label="Personas"
             active={view === VIEWS.PERSONAS}
-            onClick={() => { setView(VIEWS.PERSONAS); setSidebarOpen(false); }}
-          />
+            onClick={() => { setView(VIEWS.PERSONAS); setSidebarOpen(false); }} />
 
           {/* Theme toggle */}
           <div className="pt-2 mt-2 border-t border-council-border">
             <button
-              onClick={toggleTheme}
+              onClick={onToggleTheme}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-council-text-muted hover:text-council-text hover:bg-council-card/50 transition-colors"
               title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
@@ -105,7 +116,6 @@ export default function App() {
                 {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
               </span>
               <span className="flex-1">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
-              {/* Toggle pill */}
               <span className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ${
                 theme === 'light' ? 'bg-council-accent' : 'bg-council-border-light'
               }`}>
@@ -117,9 +127,8 @@ export default function App() {
           </div>
         </nav>
 
-        {/* Model selector + New Inquiry */}
+        {/* Bottom: model picker + account + new inquiry */}
         <div className="px-3 py-4 border-t border-council-border space-y-3">
-          {/* Model picker */}
           <div>
             <div className="text-xs text-council-text-dim uppercase tracking-widest px-1 mb-1.5">Model</div>
             <div className="flex flex-col gap-1">
@@ -143,6 +152,23 @@ export default function App() {
             </div>
           </div>
 
+          {/* Account button */}
+          <button
+            onClick={() => { setView(VIEWS.ACCOUNT); setSidebarOpen(false); }}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors ${
+              view === VIEWS.ACCOUNT
+                ? 'bg-council-card border border-council-border text-council-text'
+                : 'text-council-text-dim hover:text-council-text hover:bg-council-card/50'
+            }`}
+          >
+            <div className="w-5 h-5 rounded-full bg-council-accent/20 border border-council-accent/30 flex items-center justify-center flex-shrink-0">
+              <span className="text-council-accent text-[9px] font-bold">
+                {(profile?.name ?? 'U')[0].toUpperCase()}
+              </span>
+            </div>
+            <span className="flex-1 text-left truncate">{profile?.name ?? 'Account'}</span>
+          </button>
+
           <button
             onClick={handleNewInquiry}
             className="w-full px-4 py-2.5 bg-council-accent text-council-bg text-sm font-semibold rounded-lg hover:bg-council-accent-light transition-colors flex items-center justify-center gap-2"
@@ -155,14 +181,11 @@ export default function App() {
         </div>
       </aside>
 
-      {/* Main content */}
+      {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top bar (mobile only) */}
+        {/* Mobile top bar */}
         <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-council-border flex-shrink-0">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-1.5 text-council-text-muted hover:text-council-text transition-colors"
-          >
+          <button onClick={() => setSidebarOpen(true)} className="p-1.5 text-council-text-muted hover:text-council-text transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -171,7 +194,6 @@ export default function App() {
           <div className="w-8" />
         </div>
 
-        {/* Scrollable page content */}
         <main className="flex-1 overflow-y-auto">
           {view === VIEWS.CHAMBER && (
             <ChamberView council={council} onCardClick={setActiveCouncillorId} />
@@ -192,10 +214,10 @@ export default function App() {
               />
             </div>
           )}
+          {view === VIEWS.ACCOUNT && <AccountView />}
         </main>
       </div>
 
-      {/* Councillor detail drawer */}
       <CouncillorDrawer
         councillor={activeCouncillor}
         response={activeCouncillorId ? council.councillorResponses[activeCouncillorId] : null}
@@ -210,19 +232,14 @@ function ChamberView({ council, onCardClick }) {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-      {/* Page header */}
       <div>
         <div className="text-xs text-council-text-dim uppercase tracking-widest mb-1">Chamber Dashboard</div>
         <div className="text-xs text-council-text-muted uppercase tracking-widest">Strategic Inquiry</div>
       </div>
 
-      {/* Question input */}
       <QuestionInput onSubmit={council.submitQuestion} isLoading={council.isLoading} />
-
-      {/* Synthesis preview */}
       <SynthesisPreview synthesis={council.synthesis} />
 
-      {/* Assembly — always visible, only active councillors */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-council-text">The Assembly</h2>
@@ -230,7 +247,6 @@ function ChamberView({ council, onCardClick }) {
             {activeCouncillors.length} councillor{activeCouncillors.length !== 1 ? 's' : ''}
           </span>
         </div>
-
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {activeCouncillors.map(councillor => (
             <CouncillorCard
@@ -243,7 +259,6 @@ function ChamberView({ council, onCardClick }) {
         </div>
       </section>
 
-      {/* Chairperson synthesis */}
       {council.chairpersonResponse && (
         <ChairpersonOutput
           response={council.chairpersonResponse}
@@ -268,7 +283,7 @@ function NavItem({ icon, label, active, badge, onClick }) {
     >
       <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">{icon}</span>
       <span className="flex-1">{label}</span>
-      {badge !== null && badge !== undefined && (
+      {badge != null && (
         <span className="text-xs text-council-text-dim bg-council-border px-1.5 py-0.5 rounded-full">{badge}</span>
       )}
     </button>
@@ -276,41 +291,17 @@ function NavItem({ icon, label, active, badge, onClick }) {
 }
 
 function ChamberIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-    </svg>
-  );
+  return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>;
 }
-
 function LogIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
-    </svg>
-  );
+  return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>;
 }
-
 function PersonasIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-    </svg>
-  );
+  return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>;
 }
-
 function SunIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-    </svg>
-  );
+  return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>;
 }
-
 function MoonIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-    </svg>
-  );
+  return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>;
 }

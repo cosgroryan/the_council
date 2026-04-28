@@ -1,13 +1,13 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { AuthProvider } from './hooks/useAuth.jsx'
 import App from './App.jsx'
-import PasswordGate from './components/PasswordGate.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <PasswordGate>
+    <AuthProvider>
       <App />
-    </PasswordGate>
+    </AuthProvider>
   </React.StrictMode>,
 )
