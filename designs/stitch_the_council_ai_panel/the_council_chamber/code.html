@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Newsreader:opsz,wght@6..72,400;6..72,500&amp;family=Work+Sans:wght@600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #242426;
+        }
+        .council-glass {
+            background: rgba(17, 17, 18, 0.8);
+            backdrop-filter: blur(32px);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#303032",
+                        "inverse-surface": "#e4e2e4",
+                        "on-primary-fixed-variant": "#474647",
+                        "tertiary-fixed-dim": "#b4c8e7",
+                        "on-primary-container": "#7a797a",
+                        "on-primary-fixed": "#1c1b1c",
+                        "surface-container-low": "#1b1b1d",
+                        "surface-container-highest": "#353437",
+                        "background": "#131315",
+                        "surface-container": "#1f1f21",
+                        "error": "#ffb4ab",
+                        "outline": "#919094",
+                        "on-secondary-fixed-variant": "#5d4201",
+                        "secondary-fixed-dim": "#e9c176",
+                        "inverse-primary": "#5f5e5f",
+                        "on-tertiary": "#1e314a",
+                        "surface": "#131315",
+                        "on-tertiary-fixed": "#061c34",
+                        "secondary": "#e9c176",
+                        "primary-fixed": "#e5e2e3",
+                        "tertiary-fixed": "#d3e3ff",
+                        "surface-dim": "#131315",
+                        "on-error": "#690005",
+                        "primary-container": "#0a0a0b",
+                        "surface-tint": "#c8c6c7",
+                        "on-surface-variant": "#c7c6ca",
+                        "secondary-fixed": "#ffdea5",
+                        "on-tertiary-fixed-variant": "#354862",
+                        "on-primary": "#313031",
+                        "error-container": "#93000a",
+                        "on-tertiary-container": "#677a97",
+                        "primary-fixed-dim": "#c8c6c7",
+                        "on-secondary": "#412d00",
+                        "surface-container-high": "#2a2a2c",
+                        "primary": "#c8c6c7",
+                        "outline-variant": "#46464a",
+                        "on-background": "#e4e2e4",
+                        "on-secondary-fixed": "#261900",
+                        "on-secondary-container": "#dab36a",
+                        "surface-variant": "#353437",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-lowest": "#0e0e10",
+                        "surface-bright": "#39393b",
+                        "on-surface": "#e4e2e4",
+                        "secondary-container": "#604403",
+                        "tertiary": "#b4c8e7",
+                        "tertiary-container": "#000a1a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "section-gap": "64px",
+                        "card-inner": "24px",
+                        "container-padding": "32px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "council-output": ["Newsreader"],
+                        "display-lg": ["Manrope"],
+                        "headline-md": ["Manrope"],
+                        "body-ui": ["Manrope"],
+                        "label-caps": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "council-output": ["19px", {"lineHeight": "1.7", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "body-ui": ["15px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-[#050505] text-on-surface font-body-ui selection:bg-secondary/30">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full py-8 bg-[#050505] dark:bg-zinc-950 text-[#4A5D78] dark:text-slate-400 font-manrope text-sm tracking-tight w-64 border-r border-zinc-800 dark:border-zinc-800/50">
+<div class="px-8 mb-12">
+<div class="flex items-center gap-3">
+<img alt="The Council Seal" class="w-10 h-10 rounded-lg grayscale" data-alt="Official minimalist seal of a strategic council with a classical🏛️ icon in gold on a dark slate background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDylktXKP9liqa2mAT66_uagiEyZKFQ5ALpzh1bi61sg-yrAywGSa3Zrr-HJZvEWfcndJlTjNj52q8tgK0oeFzJTJxTYv4Fm8ZxUlwhQjOLjw-NX9db8Om6LhcePLzggiuiqOpEfJ-2cXe0FJ1lRw5JpNNEB2tEA6bINmUFCCfjOGeNzlVnhJ077P-XjFIPLGilKouSS263xetVHll1CbCshXuzC1-OKVC3_vYovsOYmczr-nR-HeZWszC6u9UWLGM8REdxxEzZ2zFD"/>
+<div>
+<h1 class="text-xl font-bold text-zinc-100 tracking-tighter">The Council</h1>
+<p class="text-[10px] uppercase tracking-widest text-[#C5A059]">Strategic Briefing</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-4 px-4 py-3 text-[#C5A059] font-bold border-r-2 border-[#C5A059] bg-zinc-900/30 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+<span>Chamber</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>Session Log</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span>Personas</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span>Intelligence</span>
+</a>
+</nav>
+<div class="px-4 mt-auto space-y-2">
+<button class="w-full py-3 px-4 bg-[#C5A059] text-black font-semibold rounded-sm hover:bg-[#D4B374] transition-colors mb-6 text-xs uppercase tracking-widest">
+                    New Inquiry
+                </button>
+<a class="flex items-center gap-4 px-4 py-3 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col h-full overflow-y-auto bg-[#050505]">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-8 h-16 w-full bg-[#050505] dark:bg-zinc-950 border-b border-zinc-800 dark:border-zinc-800/50 sticky top-0 z-30">
+<div class="md:hidden flex items-center gap-2">
+<span class="text-zinc-100 font-bold tracking-widest text-lg">The Council</span>
+</div>
+<div class="hidden md:block">
+<span class="font-manrope uppercase tracking-[0.2em] text-xs font-semibold text-[#4A5D78]">Chamber Dashboard</span>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-zinc-500 hover:text-[#C5A059] transition-colors scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+</button>
+<button class="text-zinc-500 hover:text-[#C5A059] transition-colors scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<div class="p-container-padding max-w-7xl mx-auto w-full space-y-section-gap pb-32">
+<!-- Hero Inquiry Section -->
+<section class="space-y-base">
+<div class="flex flex-col space-y-4">
+<label class="font-label-caps text-label-caps text-on-primary-container uppercase">Strategic Inquiry</label>
+<div class="relative group">
+<textarea class="w-full bg-[#111112] border border-[#242426] focus:border-[#4A5D78] focus:ring-0 text-council-output font-council-output p-8 min-h-[200px] resize-none transition-all placeholder:text-zinc-700" placeholder="Present your dilemma to the assembly..."></textarea>
+<div class="absolute bottom-6 right-6">
+<button class="bg-[#C5A059] text-black px-8 py-3 font-semibold text-sm flex items-center gap-2 hover:bg-[#D4B374] transition-all transform active:scale-95 shadow-lg shadow-[#C5A059]/10">
+<span class="material-symbols-outlined text-[20px]" data-icon="auto_awesome">auto_awesome</span>
+                                    Convene the Council
+                                </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Councillors Grid -->
+<section class="space-y-8">
+<div class="flex items-center justify-between">
+<h2 class="font-headline-md text-headline-md text-zinc-100 tracking-tight">The Assembly</h2>
+<div class="h-[1px] flex-1 mx-8 bg-zinc-800/50"></div>
+<span class="font-label-caps text-label-caps text-zinc-500">5 ACTIVE PERSONAS</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+<!-- Economist -->
+<div class="bg-[#111112] border border-[#242426] p-card-inner hover:border-[#4A5D78] transition-colors group">
+<div class="flex flex-col items-center text-center space-y-4">
+<div class="text-3xl grayscale group-hover:grayscale-0 transition-all duration-500">📉</div>
+<div>
+<h3 class="font-bold text-zinc-200">Economist</h3>
+<p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Resource Allocation</p>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-zinc-900 rounded-full border border-zinc-800">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="text-[10px] font-bold text-emerald-500 tracking-tighter">READY</span>
+</div>
+</div>
+</div>
+<!-- Operator -->
+<div class="bg-[#111112] border border-[#242426] p-card-inner hover:border-[#4A5D78] transition-colors group">
+<div class="flex flex-col items-center text-center space-y-4">
+<div class="text-3xl grayscale group-hover:grayscale-0 transition-all duration-500">⚙️</div>
+<div>
+<h3 class="font-bold text-zinc-200">Operator</h3>
+<p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Execution &amp; Logic</p>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-zinc-900 rounded-full border border-zinc-800">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="text-[10px] font-bold text-emerald-500 tracking-tighter">READY</span>
+</div>
+</div>
+</div>
+<!-- Skeptic -->
+<div class="bg-[#111112] border border-[#242426] p-card-inner border-t-2 border-t-[#C5A059] group">
+<div class="flex flex-col items-center text-center space-y-4">
+<div class="text-3xl grayscale group-hover:grayscale-0 transition-all duration-500">🧐</div>
+<div>
+<h3 class="font-bold text-zinc-200">Skeptic</h3>
+<p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Risk Mitigation</p>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-zinc-900/50 rounded-full border border-[#C5A059]/20">
+<div class="flex gap-1">
+<span class="w-1 h-1 rounded-full bg-[#C5A059] animate-bounce"></span>
+<span class="w-1 h-1 rounded-full bg-[#C5A059] animate-bounce [animation-delay:-0.15s]"></span>
+<span class="w-1 h-1 rounded-full bg-[#C5A059] animate-bounce [animation-delay:-0.3s]"></span>
+</div>
+<span class="text-[10px] font-bold text-[#C5A059] tracking-tighter">PROCESSING</span>
+</div>
+</div>
+</div>
+<!-- Idealist -->
+<div class="bg-[#111112] border border-[#242426] p-card-inner hover:border-[#4A5D78] transition-colors group">
+<div class="flex flex-col items-center text-center space-y-4">
+<div class="text-3xl grayscale group-hover:grayscale-0 transition-all duration-500">✨</div>
+<div>
+<h3 class="font-bold text-zinc-200">Idealist</h3>
+<p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Vision &amp; Purpose</p>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-zinc-900 rounded-full border border-zinc-800">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="text-[10px] font-bold text-emerald-500 tracking-tighter">READY</span>
+</div>
+</div>
+</div>
+<!-- First Principles -->
+<div class="bg-[#111112] border border-[#242426] p-card-inner hover:border-[#4A5D78] transition-colors group">
+<div class="flex flex-col items-center text-center space-y-4">
+<div class="text-3xl grayscale group-hover:grayscale-0 transition-all duration-500">🧩</div>
+<div>
+<h3 class="font-bold text-zinc-200">Thinker</h3>
+<p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Fundamental Laws</p>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-zinc-900 rounded-full border border-zinc-800">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="text-[10px] font-bold text-emerald-500 tracking-tighter">READY</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Chairperson Synthesis Section -->
+<section class="relative">
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+<div class="w-[1px] h-12 bg-gradient-to-b from-transparent to-[#C5A059]"></div>
+<span class="font-label-caps text-label-caps text-[#C5A059] tracking-[0.3em]">SYNTHESIS</span>
+</div>
+<div class="bg-[#111112] border border-zinc-800 p-12 relative overflow-hidden">
+<!-- Decorative Watermark -->
+<div class="absolute -right-20 -bottom-20 text-[200px] text-zinc-900/10 font-bold pointer-events-none select-none">COUNCIL</div>
+<div class="max-w-4xl mx-auto space-y-12 relative z-10">
+<div class="flex items-center gap-6">
+<img alt="Chairperson Avatar" class="w-16 h-16 border-2 border-[#C5A059] p-1 grayscale" data-alt="A portrait silhouette representing a high-level strategic chairperson, minimalist vector style in dark slate and gold" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAD2eNnEmnuyEA-3mTdNSLw6gHk66U6kY25ezHcf16WUiWSYdYOORp72Df1adiCs-581NsovU5qxZzkVhyb5sVbNO5DctZk9qM9hX5T4odhcVU5snQWS5AlyESvhCVdnxnGCw8smjWK6CaBu9xCivDDCF4VPJo-9YqzMMSeg50vV9Deh4juKnVrX9g_dGi8F3F4M5r7cLuFYY0QoAYOSKIHvupbcopZ43CcoiIP45earnsIW5uWi0S8HoLQBoAw5U1dYnDmXyDP8Ve"/>
+<div>
+<h2 class="text-headline-md font-headline-md text-zinc-50">Chairperson's Synthesis</h2>
+<p class="text-sm text-zinc-500 font-manrope">Session #4928 • Strategic Priority Alpha</p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+<div class="space-y-4">
+<h3 class="font-label-caps text-label-caps text-[#C5A059] border-b border-[#C5A059]/20 pb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]" data-icon="handshake">handshake</span>
+                                        CONSENSUS
+                                    </h3>
+<p class="font-council-output text-council-output text-on-surface-variant leading-relaxed">
+                                        The assembly agrees that the current trajectory necessitates a fundamental pivot toward infrastructure resilience. Both the Economist and Operator align on the necessity of immediate capital injection to preserve core operational integrity.
+                                    </p>
+</div>
+<div class="space-y-4">
+<h3 class="font-label-caps text-label-caps text-[#C5A059] border-b border-[#C5A059]/20 pb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]" data-icon="balance">balance</span>
+                                        TENSIONS
+                                    </h3>
+<p class="font-council-output text-council-output text-on-surface-variant leading-relaxed">
+                                        A significant friction remains between the Idealist’s vision for expansion and the Skeptic’s warnings regarding debt exposure. This 40% divergence suggests a lack of clarity on long-term exit velocity.
+                                    </p>
+</div>
+<div class="space-y-4">
+<h3 class="font-label-caps text-label-caps text-[#C5A059] border-b border-[#C5A059]/20 pb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]" data-icon="report_problem">report_problem</span>
+                                        RISKS
+                                    </h3>
+<ul class="space-y-2 font-council-output text-council-output text-on-surface-variant">
+<li class="flex gap-4">
+<span class="text-[#C5A059]">•</span>
+                                            Over-reliance on centralized protocol stability.
+                                        </li>
+<li class="flex gap-4">
+<span class="text-[#C5A059]">•</span>
+                                            Inability to react to 2nd-order cultural shifts.
+                                        </li>
+</ul>
+</div>
+<div class="space-y-4">
+<h3 class="font-label-caps text-label-caps text-[#C5A059] border-b border-[#C5A059]/20 pb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]" data-icon="verified">verified</span>
+                                        RECOMMENDATION
+                                    </h3>
+<div class="bg-zinc-900/50 p-6 border-l-2 border-[#C5A059]">
+<p class="font-council-output text-council-output text-zinc-100 italic">
+                                            "Implement Phase One austerity immediately while maintaining the research lab budget. Diversify decision-making nodes to mitigate the Skeptic's primary concern."
+                                        </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 pb-safe bg-[#111112] dark:bg-zinc-900 border-t border-zinc-800 shadow-2xl">
+<a class="flex flex-col items-center justify-center text-[#C5A059] pt-2 font-manrope text-[10px] font-medium tracking-tighter" href="#">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+<span>Chamber</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 pt-2 font-manrope text-[10px] font-medium tracking-tighter" href="#">
+<span class="material-symbols-outlined" data-icon="database">database</span>
+<span>Log</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 pt-2 font-manrope text-[10px] font-medium tracking-tighter" href="#">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span>Config</span>
+</a>
+</nav>
+</div>
+</body></html>

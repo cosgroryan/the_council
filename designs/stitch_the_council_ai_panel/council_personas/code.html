@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Council | Personas Configuration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=Newsreader:opsz,wght@6-72,400;700&amp;family=Work+Sans:wght@600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#303032",
+                        "inverse-surface": "#e4e2e4",
+                        "on-primary-fixed-variant": "#474647",
+                        "tertiary-fixed-dim": "#b4c8e7",
+                        "on-primary-container": "#7a797a",
+                        "on-primary-fixed": "#1c1b1c",
+                        "surface-container-low": "#1b1b1d",
+                        "surface-container-highest": "#353437",
+                        "background": "#050505",
+                        "surface-container": "#1f1f21",
+                        "error": "#ffb4ab",
+                        "outline": "#919094",
+                        "on-secondary-fixed-variant": "#5d4201",
+                        "secondary-fixed-dim": "#e9c176",
+                        "inverse-primary": "#5f5e5f",
+                        "on-tertiary": "#1e314a",
+                        "surface": "#131315",
+                        "on-tertiary-fixed": "#061c34",
+                        "secondary": "#e9c176",
+                        "primary-fixed": "#e5e2e3",
+                        "tertiary-fixed": "#d3e3ff",
+                        "surface-dim": "#131315",
+                        "on-error": "#690005",
+                        "primary-container": "#0a0a0b",
+                        "surface-tint": "#c8c6c7",
+                        "on-surface-variant": "#c7c6ca",
+                        "secondary-fixed": "#ffdea5",
+                        "on-tertiary-fixed-variant": "#354862",
+                        "on-primary": "#313031",
+                        "error-container": "#93000a",
+                        "on-tertiary-container": "#677a97",
+                        "primary-fixed-dim": "#c8c6c7",
+                        "on-secondary": "#412d00",
+                        "surface-container-high": "#2a2a2c",
+                        "primary": "#c8c6c7",
+                        "outline-variant": "#46464a",
+                        "on-background": "#e4e2e4",
+                        "on-secondary-fixed": "#261900",
+                        "on-secondary-container": "#dab36a",
+                        "surface-variant": "#353437",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-lowest": "#0e0e10",
+                        "surface-bright": "#39393b",
+                        "on-surface": "#e4e2e4",
+                        "secondary-container": "#604403",
+                        "tertiary": "#b4c8e7",
+                        "tertiary-container": "#000a1a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "section-gap": "64px",
+                        "card-inner": "24px",
+                        "container-padding": "32px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "council-output": ["Newsreader"],
+                        "display-lg": ["Manrope"],
+                        "headline-md": ["Manrope"],
+                        "body-ui": ["Manrope"],
+                        "label-caps": ["Work Sans"]
+                    },
+                    "fontSize": {
+                        "council-output": ["19px", {"lineHeight": "1.7", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "body-ui": ["15px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .persona-card {
+            border: 1px solid #242426;
+            background-color: #111112;
+        }
+        .persona-card:hover {
+            border-color: #4A5D78;
+        }
+        .input-underlined {
+            border: 0;
+            border-bottom: 1px solid #242426;
+            background: transparent;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        .input-underlined:focus {
+            border-bottom-color: #4A5D78;
+            ring: 0;
+            outline: 0;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-ui min-h-screen flex">
+<!-- SideNavBar (Shared Component) -->
+<aside class="hidden md:flex flex-col h-screen w-64 border-r border-zinc-800 bg-[#050505] py-8 sticky top-0">
+<div class="px-6 mb-12">
+<h1 class="text-xl font-bold text-zinc-100 tracking-tighter">The Council</h1>
+<p class="text-[#4A5D78] font-manrope text-sm tracking-tight">Strategic Briefing</p>
+</div>
+<nav class="flex-1 space-y-2 px-3">
+<a class="flex items-center gap-3 px-3 py-3 text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-200 transition-all font-manrope text-sm tracking-tight rounded-sm" href="#">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+<span>Chamber</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-200 transition-all font-manrope text-sm tracking-tight rounded-sm" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>Session Log</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-[#C5A059] font-bold border-r-2 border-[#C5A059] bg-zinc-900/30 font-manrope text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span>Personas</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-200 transition-all font-manrope text-sm tracking-tight rounded-sm" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span>Intelligence</span>
+</a>
+</nav>
+<div class="px-3 pt-6 border-t border-zinc-800/50">
+<button class="w-full py-3 bg-[#4A5D78] text-white font-semibold text-sm rounded-sm mb-6 active:opacity-80 transition-opacity">
+                New Inquiry
+            </button>
+<a class="flex items-center gap-3 px-3 py-3 text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-200 transition-all font-manrope text-sm tracking-tight rounded-sm" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="flex-1 flex flex-col min-h-screen">
+<!-- TopAppBar (Shared Component) -->
+<header class="flex justify-between items-center px-8 h-16 w-full bg-[#050505] border-b border-zinc-800">
+<div class="flex items-center gap-4">
+<span class="text-lg font-bold tracking-widest text-zinc-100 font-manrope">THE COUNCIL</span>
+</div>
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined text-[#4A5D78] cursor-pointer scale-95 active:scale-90 transition-transform" data-icon="notifications_active">notifications_active</span>
+<span class="material-symbols-outlined text-[#4A5D78] cursor-pointer scale-95 active:scale-90 transition-transform" data-icon="account_circle">account_circle</span>
+</div>
+</header>
+<!-- Content Area -->
+<div class="p-container-padding max-w-7xl mx-auto w-full">
+<!-- Page Header -->
+<div class="flex justify-between items-end mb-section-gap">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-surface">Personas</h2>
+<p class="text-on-primary-container font-council-output mt-2">Configure the archetypes and moral frameworks governing the Council's logic.</p>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-2 border border-zinc-800 text-zinc-400 font-label-caps text-label-caps hover:bg-zinc-900 transition-colors uppercase">
+                        Reset to Defaults
+                    </button>
+<button class="px-6 py-2 bg-[#C5A059] text-black font-label-caps text-label-caps uppercase flex items-center gap-2 hover:bg-[#d4b578] transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                        Add New Councillor
+                    </button>
+</div>
+</div>
+<!-- Configuration Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<!-- Councillor 1: The Ethicist -->
+<section class="persona-card p-card-inner flex flex-col border-t-2 border-t-[#C5A059]">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-zinc-900 rounded-sm flex items-center justify-center text-2xl">⚖️</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-zinc-100">The Ethicist</h3>
+<p class="text-xs font-label-caps text-zinc-500 uppercase tracking-widest">Primary Seat</p>
+</div>
+</div>
+<button class="text-zinc-600 hover:text-error transition-colors">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+</button>
+</div>
+<div class="space-y-6">
+<div class="flex gap-4">
+<div class="flex-1">
+<label class="block font-label-caps text-label-caps text-zinc-500 uppercase mb-2">Name</label>
+<input class="w-full input-underlined font-body-ui text-zinc-100" type="text" value="The Ethicist"/>
+</div>
+<div class="w-20">
+<label class="block font-label-caps text-label-caps text-zinc-500 uppercase mb-2">Emoji</label>
+<input class="w-full input-underlined text-center font-body-ui text-zinc-100" type="text" value="⚖️"/>
+</div>
+</div>
+<div>
+<label class="block font-label-caps text-label-caps text-zinc-500 uppercase mb-2">System Prompt</label>
+<textarea class="w-full bg-zinc-900/50 border border-zinc-800 rounded-sm p-4 font-council-output text-zinc-300 focus:border-[#4A5D78] focus:ring-0 outline-none resize-none" rows="6">You are the moral compass of the Council. Analyze all inquiries through the lens of deontology and utilitarianism. Prioritize long-term human well-being over immediate strategic gains. Your tone is somber, precise, and uncompromising.</textarea>
+</div>
+</div>
+</section>
+<!-- Councillor 2: The Pragmatist -->
+<section class="persona-card p-card-inner flex flex-col">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-zinc-900 rounded-sm flex items-center justify-center text-2xl">♟️</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-zinc-100">The Pragmatist</h3>
+<p class="text-xs font-label-caps text-zinc-500 uppercase tracking-widest">Secondary Seat</p>
+</div>
+</div>
+<button class="text-zinc-600 hover:text-error transition-colors">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+</button>
+</div>
+<div class="space-y-6">
+<div class="flex gap-4">
+<div class="flex-1">
+<label class="block font-label-caps text-label-caps text-zinc-500 uppercase mb-2">Name</label>
+<input class="w-full input-underlined font-body-ui text-zinc-100" type="text" value="The Pragmatist"/>
+</div>
+<div class="w-20">
+<label class="block font-label-caps text-label-caps text-zinc-500 uppercase mb-2">Emoji</label>
+<input class="w-full input-underlined text-center font-body-ui text-zinc-100" type="text" value="♟️"/>
+</div>
+</div>
+<div>
+<label class="block font-label-caps text-label-caps text-zinc-500 uppercase mb-2">System Prompt</label>
+<textarea class="w-full bg-zinc-900/50 border border-zinc-800 rounded-sm p-4 font-council-output text-zinc-300 focus:border-[#4A5D78] focus:ring-0 outline-none resize-none" rows="6">Focus on actionable results and real-world implementation. Disregard abstract ideals if they hinder immediate efficiency. You represent Realpolitik. Your responses should be brief, data-driven, and focused on leverage.</textarea>
+</div>
+</div>
+</section>
+<!-- Councillor 3: The Adversary -->
+<section class="persona-card p-card-inner flex flex-col">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-zinc-900 rounded-sm flex items-center justify-center text-2xl">🔥</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-zinc-100">The Adversary</h3>
+<p class="text-xs font-label-caps text-zinc-500 uppercase tracking-widest">Reviewer</p>
+</div>
+</div>
+<button class="text-zinc-600 hover:text-error transition-colors">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+</button>
+</div>
+<div class="space-y-6">
+<div class="flex gap-4">
+<div class="flex-1">
+<label class="block font-label-caps text-label-caps text-zinc-500 uppercase mb-2">Name</label>
+<input class="w-full input-underlined font-body-ui text-zinc-100" type="text" value="The Adversary"/>
+</div>
+<div class="w-20">
+<label class="block font-label-caps text-label-caps text-zinc-500 uppercase mb-2">Emoji</label>
+<input class="w-full input-underlined text-center font-body-ui text-zinc-100" type="text" value="🔥"/>
+</div>
+</div>
+<div>
+<label class="block font-label-caps text-label-caps text-zinc-500 uppercase mb-2">System Prompt</label>
+<textarea class="w-full bg-zinc-900/50 border border-zinc-800 rounded-sm p-4 font-council-output text-zinc-300 focus:border-[#4A5D78] focus:ring-0 outline-none resize-none" rows="6">Your role is to find the fatal flaw in every proposal. Adopt a devil's advocate position. Be critical, skeptical, and look for unintended consequences that others are too optimistic to see.</textarea>
+</div>
+</div>
+</section>
+<!-- Add Placeholder / Empty State for New -->
+<div class="border border-dashed border-zinc-800 flex items-center justify-center p-card-inner bg-zinc-900/10 hover:bg-zinc-900/20 transition-all group cursor-pointer">
+<div class="text-center">
+<span class="material-symbols-outlined text-4xl text-zinc-700 group-hover:text-zinc-500 transition-colors mb-2" data-icon="person_add">person_add</span>
+<p class="font-label-caps text-label-caps text-zinc-600 uppercase">Initialize New Councillor</p>
+</div>
+</div>
+</div>
+<!-- Footer Meta -->
+<div class="mt-section-gap pt-8 border-t border-zinc-900 flex justify-between items-center text-zinc-600 text-xs font-label-caps uppercase tracking-widest">
+<span>Total Active Seats: 03</span>
+<span>Last Updated: 24 Oct 2023, 14:02 UTC</span>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Shared Component - Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 pb-safe bg-[#111112] border-t border-zinc-800">
+<a class="flex flex-col items-center justify-center text-zinc-500 pt-2" href="#">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+<span class="font-manrope text-[10px] font-medium tracking-tighter uppercase">Chamber</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 pt-2" href="#">
+<span class="material-symbols-outlined" data-icon="database">database</span>
+<span class="font-manrope text-[10px] font-medium tracking-tighter uppercase">Log</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#C5A059] pt-2" href="#">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span class="font-manrope text-[10px] font-medium tracking-tighter uppercase">Config</span>
+</a>
+</nav>
+<!-- Background Decorative Texture -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay">
+<img class="w-full h-full object-cover" data-alt="ultra-fine film grain and subtle noise texture over a deep obsidian black background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJmpPxh91Qw3xbLdFPqG-8vwGmQIY1bnYUcZpX_3EGrDkomQLfoqdV9PCdA7KjrxoAV3TU95Elc0aFhna88DTRs7pK_xFeiq7pFegjn0brP-wrTc7RpnfZyvCsHZdHzO3sZmO6USj8uuq6bmaweanplv_nJWB_nuZodzzPD5p_CCkH30wwZe3m7hT6QNM2uyohO5DlKXkuWtQAM1SvWpFEHun3BTtoIFjd5-gzkGnZ_BOM7Ioj8KXE1ww6mkZgQMcGYYs7O0gqcK-z"/>
+</div>
+</body></html>
