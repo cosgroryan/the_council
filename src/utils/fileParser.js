@@ -17,7 +17,8 @@ export async function parseFile(file) {
   const ext = name.split('.').pop().toLowerCase();
   try {
     if (ext === 'pdf') return await parsePDF(file);
-    if (ext === 'docx' || ext === 'doc') return await parseWord(file);
+    if (ext === 'docx') return await parseWord(file);
+    if (ext === 'doc') throw new Error('Legacy .doc format is not supported — please save as .docx and re-upload.');
     if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') return await parseExcel(file, ext);
     if (ext === 'txt' || ext === 'md' || ext === 'json') return await parsePlainText(file, ext);
     throw new Error(`Unsupported type: .${ext}`);
@@ -54,8 +55,9 @@ async function parsePDF(file) {
 
 async function parseWord(file) {
   const mammoth = await import('mammoth');
+  const mod = mammoth.default ?? mammoth;
   const arrayBuffer = await file.arrayBuffer();
-  const result = await mammoth.default.extractRawText({ arrayBuffer });
+  const result = await mod.extractRawText({ arrayBuffer });
 
   const raw = result.value;
   const wordCount = raw.trim().split(/\s+/).filter(Boolean).length;
