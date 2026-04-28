@@ -321,21 +321,33 @@ function groupModels(models) {
 
 function ModelPicker({ models, selected, onSelect, disabled }) {
   const [openFamily, setOpenFamily] = useState(null);
+  const [popoutPos, setPopoutPos]   = useState(null);
   const groups = useMemo(() => groupModels(models), [models]);
 
-  return (
-    <div className="flex flex-col gap-0.5">
-      {groups.map(({ family, description, models: fModels }) => {
-        const activeModel = fModels.find(m => m.id === selected);
-        const shown = activeModel || fModels[0];
-        const version = shown.label.match(/[\d.]+$/)?.[0];
-        const isActive = !!activeModel;
-        const isOpen = openFamily === family;
-        const hasMultiple = fModels.length > 1;
+  function close() { setOpenFamily(null); setPopoutPos(null); }
 
-        return (
-          <div key={family}>
-            <div className={`flex items-center rounded-lg text-xs transition-colors ${
+  function handleChevron(e, family) {
+    if (openFamily === family) { close(); return; }
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPopoutPos({ top: rect.top, left: rect.right + 6 });
+    setOpenFamily(family);
+  }
+
+  const openGroup = openFamily ? groups.find(g => g.family === openFamily) : null;
+
+  return (
+    <>
+      <div className="flex flex-col gap-0.5">
+        {groups.map(({ family, description, models: fModels }) => {
+          const activeModel = fModels.find(m => m.id === selected);
+          const shown = activeModel || fModels[0];
+          const version = shown.label.match(/[\d.]+$/)?.[0];
+          const isActive = !!activeModel;
+          const isOpen = openFamily === family;
+          const hasMultiple = fModels.length > 1;
+
+          return (
+            <div key={family} className={`flex items-center rounded-lg text-xs transition-colors ${
               isActive
                 ? 'bg-council-card border border-council-border-light text-council-text'
                 : 'text-council-text-dim hover:text-council-text-muted hover:bg-council-card/50'
@@ -350,9 +362,13 @@ function ModelPicker({ models, selected, onSelect, disabled }) {
               </button>
               {hasMultiple && (
                 <button
-                  onClick={() => setOpenFamily(isOpen ? null : family)}
+                  onClick={e => handleChevron(e, family)}
                   className={`flex items-center gap-0.5 px-2 py-1.5 border-l border-council-border/40 ${
-                    isActive ? 'text-council-text-dim hover:text-council-text' : 'text-council-text-dim/40 hover:text-council-text-dim'
+                    isOpen
+                      ? 'text-council-accent'
+                      : isActive
+                        ? 'text-council-text-dim hover:text-council-text'
+                        : 'text-council-text-dim/40 hover:text-council-text-dim'
                   }`}
                 >
                   <span className="font-mono text-[10px]">{version}</span>
@@ -362,28 +378,40 @@ function ModelPicker({ models, selected, onSelect, disabled }) {
                 </button>
               )}
             </div>
-            {isOpen && (
-              <div className="ml-2 mt-0.5 pl-2 border-l border-council-border flex flex-col gap-0.5">
-                {fModels.map(m => {
-                  const v = m.label.match(/[\d.]+$/)?.[0];
-                  return (
-                    <button
-                      key={m.id}
-                      onClick={() => { onSelect(m.id); setOpenFamily(null); }}
-                      className={`text-left px-2 py-1 rounded text-xs transition-colors ${
-                        m.id === selected ? 'text-council-accent' : 'text-council-text-dim hover:text-council-text'
-                      }`}
-                    >
-                      {v}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+
+      {/* Click-away backdrop */}
+      {openFamily && (
+        <div className="fixed inset-0 z-40" onClick={close} />
+      )}
+
+      {/* Floating version popout */}
+      {openGroup && popoutPos && (
+        <div
+          className="fixed z-50 bg-council-surface border border-council-border rounded-lg shadow-xl py-1 min-w-[72px]"
+          style={{ top: popoutPos.top, left: popoutPos.left }}
+        >
+          {openGroup.models.map(m => {
+            const v = m.label.match(/[\d.]+$/)?.[0];
+            return (
+              <button
+                key={m.id}
+                onClick={() => { onSelect(m.id); close(); }}
+                className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                  m.id === selected
+                    ? 'text-council-accent'
+                    : 'text-council-text-dim hover:text-council-text hover:bg-council-card/60'
+                }`}
+              >
+                {v}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }
 
