@@ -196,7 +196,7 @@ export function useCouncil({ user, apiKey }) {
   }, [user]);
 
   // ── Submit question ───────────────────────────────────────────
-  const submitQuestion = useCallback(async (question, attachedFiles = []) => {
+  const submitQuestion = useCallback(async (question, attachedFiles = [], priorSession = null) => {
     if (!question.trim() || isLoading || !apiKey) return;
 
     setIsLoading(true);
@@ -208,13 +208,21 @@ export function useCouncil({ user, apiKey }) {
 
     const activeCouncillors = councillors.filter(c => c.active !== false);
 
+    const priorBlock = priorSession
+      ? `[PRIOR SESSION]\nQuestion: ${priorSession.question}\nCouncil synthesis: ${priorSession.chairpersonContent}\n[END PRIOR SESSION]`
+      : null;
+
     const rawFileBlock = attachedFiles.length > 0
       ? attachedFiles.map(f => `[${f.name}]\n${f.content}`).join('\n\n')
       : null;
 
-    const synthInput = rawFileBlock
-      ? `Question:\n${question}\n\nDocuments:\n${rawFileBlock}`
-      : `Question:\n${question}`;
+    const synthParts = [
+      priorBlock ? `Prior session context:\n${priorBlock}` : null,
+      `Question:\n${question}`,
+      rawFileBlock ? `Documents:\n${rawFileBlock}` : null,
+    ].filter(Boolean);
+
+    const synthInput = synthParts.join('\n\n');
 
     let trimmedQuestion = question;
     let fileContext = null;
@@ -234,6 +242,7 @@ export function useCouncil({ user, apiKey }) {
     setCouncillorResponses(initial);
 
     const councillorContent = [
+      priorBlock ? `Prior session context:\n${priorBlock}` : null,
       fileContext ? `Context:\n${fileContext}` : null,
       trimmedQuestion,
     ].filter(Boolean).join('\n\n');

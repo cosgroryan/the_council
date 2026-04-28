@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from './hooks/useAuth.jsx';
 import { useCouncil } from './hooks/useCouncil';
 import { useModels } from './hooks/useModels';
@@ -66,10 +66,18 @@ function Chamber({ theme, onToggleTheme }) {
   const [view, setView]                       = useState(VIEWS.CHAMBER);
   const [activeCouncillorId, setActiveCouncillorId] = useState(null);
   const [sidebarOpen, setSidebarOpen]         = useState(false);
+  const [priorSession, setPriorSession]       = useState(null);
 
   const activeCouncillor = council.councillors.find(c => c.id === activeCouncillorId) ?? null;
 
   function handleNewInquiry() {
+    setPriorSession(null);
+    setView(VIEWS.CHAMBER);
+    setSidebarOpen(false);
+  }
+
+  function handleContinueSession(session) {
+    setPriorSession(session);
     setView(VIEWS.CHAMBER);
     setSidebarOpen(false);
   }
@@ -137,25 +145,7 @@ function Chamber({ theme, onToggleTheme }) {
         <div className="px-3 py-4 border-t border-council-border space-y-3">
           <div>
             <div className="text-xs text-council-text-dim uppercase tracking-widest px-1 mb-1.5">Model</div>
-            <div className="flex flex-col gap-1">
-              {models.map(m => (
-                <button
-                  key={m.id}
-                  onClick={() => council.setModel(m.id)}
-                  disabled={council.isLoading}
-                  className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                    council.model === m.id
-                      ? 'bg-council-card border border-council-border-light text-council-text'
-                      : 'text-council-text-dim hover:text-council-text-muted hover:bg-council-card/50'
-                  }`}
-                >
-                  <span>{m.label}</span>
-                  <span className={council.model === m.id ? 'text-council-text-dim' : 'text-council-text-dim/50'}>
-                    {m.description}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <ModelPicker models={models} selected={council.model} onSelect={council.setModel} disabled={council.isLoading} />
           </div>
 
           {/* Account button */}
@@ -202,11 +192,11 @@ function Chamber({ theme, onToggleTheme }) {
 
         <main className="flex-1 overflow-y-auto">
           {view === VIEWS.CHAMBER && (
-            <ChamberView council={council} onCardClick={setActiveCouncillorId} />
+            <ChamberView council={council} onCardClick={setActiveCouncillorId} priorSession={priorSession} onClearPrior={() => setPriorSession(null)} />
           )}
           {view === VIEWS.SESSION_LOG && (
             <div className="max-w-4xl mx-auto px-6 py-8">
-              <SessionLog sessions={council.sessionLog} />
+              <SessionLog sessions={council.sessionLog} onContinue={handleContinueSession} />
             </div>
           )}
           {view === VIEWS.PERSONAS && (
@@ -233,8 +223,13 @@ function Chamber({ theme, onToggleTheme }) {
   );
 }
 
-function ChamberView({ council, onCardClick }) {
+function ChamberView({ council, onCardClick, priorSession, onClearPrior }) {
   const activeCouncillors = council.councillors.filter(c => c.active !== false);
+
+  function handleSubmit(question, files) {
+    council.submitQuestion(question, files, priorSession ?? null);
+    if (priorSession) onClearPrior();
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
@@ -243,7 +238,18 @@ function ChamberView({ council, onCardClick }) {
         <div className="text-xs text-council-text-muted uppercase tracking-widest">Strategic Inquiry</div>
       </div>
 
-      <QuestionInput onSubmit={council.submitQuestion} isLoading={council.isLoading} />
+      {priorSession && (
+        <div className="flex items-start gap-3 px-4 py-3 bg-council-surface border border-council-border rounded-xl text-xs">
+          <span className="text-council-accent mt-0.5">↩</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-council-text-dim uppercase tracking-widest mb-0.5">Continuing from</div>
+            <div className="text-council-text truncate font-medium">{priorSession.question}</div>
+          </div>
+          <button onClick={onClearPrior} className="text-council-text-dim hover:text-council-text transition-colors flex-shrink-0">✕</button>
+        </div>
+      )}
+
+      <QuestionInput onSubmit={handleSubmit} isLoading={council.isLoading} />
       <SynthesisPreview synthesis={council.synthesis} />
 
       <section className="space-y-4">
@@ -293,6 +299,91 @@ function NavItem({ icon, label, active, badge, onClick }) {
         <span className="text-xs text-council-text-dim bg-council-border px-1.5 py-0.5 rounded-full">{badge}</span>
       )}
     </button>
+  );
+}
+
+function groupModels(models) {
+  const map = {};
+  for (const m of models) {
+    const family = m.label.replace(/\s[\d.]+$/, '').trim();
+    if (!map[family]) map[family] = { family, description: m.description, models: [] };
+    map[family].models.push(m);
+  }
+  for (const g of Object.values(map)) {
+    g.models.sort((a, b) => {
+      const va = parseFloat(a.label.match(/[\d.]+$/)?.[0] || '0');
+      const vb = parseFloat(b.label.match(/[\d.]+$/)?.[0] || '0');
+      return vb - va;
+    });
+  }
+  return Object.values(map).sort((a, b) => a.family.localeCompare(b.family));
+}
+
+function ModelPicker({ models, selected, onSelect, disabled }) {
+  const [openFamily, setOpenFamily] = useState(null);
+  const groups = useMemo(() => groupModels(models), [models]);
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {groups.map(({ family, description, models: fModels }) => {
+        const activeModel = fModels.find(m => m.id === selected);
+        const shown = activeModel || fModels[0];
+        const version = shown.label.match(/[\d.]+$/)?.[0];
+        const isActive = !!activeModel;
+        const isOpen = openFamily === family;
+        const hasMultiple = fModels.length > 1;
+
+        return (
+          <div key={family}>
+            <div className={`flex items-center rounded-lg text-xs transition-colors ${
+              isActive
+                ? 'bg-council-card border border-council-border-light text-council-text'
+                : 'text-council-text-dim hover:text-council-text-muted hover:bg-council-card/50'
+            }`}>
+              <button
+                className="flex-1 flex items-center justify-between px-3 py-1.5 text-left"
+                onClick={() => onSelect(shown.id)}
+                disabled={disabled}
+              >
+                <span>{family}</span>
+                <span className={isActive ? 'text-council-text-dim' : 'text-council-text-dim/50'}>{description}</span>
+              </button>
+              {hasMultiple && (
+                <button
+                  onClick={() => setOpenFamily(isOpen ? null : family)}
+                  className={`flex items-center gap-0.5 px-2 py-1.5 border-l border-council-border/40 ${
+                    isActive ? 'text-council-text-dim hover:text-council-text' : 'text-council-text-dim/40 hover:text-council-text-dim'
+                  }`}
+                >
+                  <span className="font-mono text-[10px]">{version}</span>
+                  <svg className={`w-2.5 h-2.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            {isOpen && (
+              <div className="ml-2 mt-0.5 pl-2 border-l border-council-border flex flex-col gap-0.5">
+                {fModels.map(m => {
+                  const v = m.label.match(/[\d.]+$/)?.[0];
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => { onSelect(m.id); setOpenFamily(null); }}
+                      className={`text-left px-2 py-1 rounded text-xs transition-colors ${
+                        m.id === selected ? 'text-council-accent' : 'text-council-text-dim hover:text-council-text'
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
