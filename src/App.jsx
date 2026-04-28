@@ -67,6 +67,7 @@ function Chamber({ theme, onToggleTheme }) {
   const [activeCouncillorId, setActiveCouncillorId] = useState(null);
   const [sidebarOpen, setSidebarOpen]         = useState(false);
   const [priorSession, setPriorSession]       = useState(null);
+  const [sessionKey, setSessionKey]           = useState(0);
 
   const activeCouncillor = council.councillors.find(c => c.id === activeCouncillorId) ?? null;
 
@@ -74,6 +75,13 @@ function Chamber({ theme, onToggleTheme }) {
     setPriorSession(null);
     setView(VIEWS.CHAMBER);
     setSidebarOpen(false);
+  }
+
+  function handleClear() {
+    council.clearSession();
+    setPriorSession(null);
+    setSessionKey(k => k + 1); // remounts ChamberView, resetting draft text/files
+    setView(VIEWS.CHAMBER);
   }
 
   function handleContinueSession(session) {
@@ -191,15 +199,15 @@ function Chamber({ theme, onToggleTheme }) {
         </div>
 
         <main className="flex-1 overflow-y-auto">
-          {view === VIEWS.CHAMBER && (
-            <ChamberView council={council} onCardClick={setActiveCouncillorId} priorSession={priorSession} onClearPrior={() => setPriorSession(null)} />
-          )}
-          {view === VIEWS.SESSION_LOG && (
+          <div className={view !== VIEWS.CHAMBER ? 'hidden' : ''}>
+            <ChamberView key={sessionKey} council={council} onCardClick={setActiveCouncillorId} priorSession={priorSession} onClearPrior={() => setPriorSession(null)} onClear={handleClear} />
+          </div>
+          <div className={view !== VIEWS.SESSION_LOG ? 'hidden' : ''}>
             <div className="max-w-4xl mx-auto px-6 py-8">
               <SessionLog sessions={council.sessionLog} onContinue={handleContinueSession} />
             </div>
-          )}
-          {view === VIEWS.PERSONAS && (
+          </div>
+          <div className={view !== VIEWS.PERSONAS ? 'hidden' : ''}>
             <div className="max-w-4xl mx-auto px-6 py-8">
               <CouncillorEditor
                 councillors={council.councillors}
@@ -209,8 +217,10 @@ function Chamber({ theme, onToggleTheme }) {
                 onReset={council.resetToDefaults}
               />
             </div>
-          )}
-          {view === VIEWS.ACCOUNT && <AccountView />}
+          </div>
+          <div className={view !== VIEWS.ACCOUNT ? 'hidden' : ''}>
+            <AccountView />
+          </div>
         </main>
       </div>
 
@@ -223,8 +233,9 @@ function Chamber({ theme, onToggleTheme }) {
   );
 }
 
-function ChamberView({ council, onCardClick, priorSession, onClearPrior }) {
+function ChamberView({ council, onCardClick, priorSession, onClearPrior, onClear }) {
   const activeCouncillors = council.councillors.filter(c => c.active !== false);
+  const hasSession = council.chairpersonResponse || Object.keys(council.councillorResponses).length > 0;
 
   function handleSubmit(question, files) {
     council.submitQuestion(question, files, priorSession ?? null);
@@ -233,9 +244,22 @@ function ChamberView({ council, onCardClick, priorSession, onClearPrior }) {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-      <div>
-        <div className="text-xs text-council-text-dim uppercase tracking-widest mb-1">Chamber Dashboard</div>
-        <div className="text-xs text-council-text-muted uppercase tracking-widest">Strategic Inquiry</div>
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-xs text-council-text-dim uppercase tracking-widest mb-1">Chamber Dashboard</div>
+          <div className="text-xs text-council-text-muted uppercase tracking-widest">Strategic Inquiry</div>
+        </div>
+        {(hasSession || priorSession) && (
+          <button
+            onClick={onClear}
+            className="text-xs text-council-text-dim hover:text-council-text transition-colors flex items-center gap-1.5"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Clear
+          </button>
+        )}
       </div>
 
       {priorSession && (

@@ -335,10 +335,19 @@ export function useCouncil({ user, apiKey }) {
     }
   }, [model, isLoading, apiKey]);
 
+  const clearSession = useCallback(() => {
+    setCouncillorResponses({});
+    setChairpersonResponse(null);
+    setChairpersonReplies([]);
+    setSynthesis(null);
+    chairpersonThreadRef.current = [];
+  }, []);
+
   return {
     councillors, model, setModel, isLoading, synthesis,
     currentQuestion, councillorResponses, chairpersonResponse,
     chairpersonReplies, sessionLog, submitQuestion, askFollowUp,
     addCouncillor, updateCouncillor, removeCouncillor, resetToDefaults,
+    clearSession,
   };
 }
