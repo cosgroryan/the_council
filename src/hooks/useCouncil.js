@@ -13,7 +13,7 @@ const MODEL_KEY = 'council_model';
 function loadModel() {
   try {
     const s = localStorage.getItem(MODEL_KEY);
-    if (s && MODELS.find(m => m.id === s)) return s;
+    if (s) return s;
   } catch {}
   return 'claude-sonnet-4-6';
 }

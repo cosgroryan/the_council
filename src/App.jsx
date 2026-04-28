@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth.jsx';
-import { useCouncil, MODELS } from './hooks/useCouncil';
+import { useCouncil } from './hooks/useCouncil';
+import { useModels } from './hooks/useModels';
 import AuthScreen from './components/AuthScreen';
 import UnlockScreen from './components/UnlockScreen';
 import AccountView from './components/AccountView';
@@ -58,9 +59,9 @@ export default function App() {
 }
 
 function Chamber({ theme, onToggleTheme }) {
-  const { user, profile } = useAuth();
-  const { apiKey } = useAuth();
+  const { user, profile, apiKey } = useAuth();
   const council = useCouncil({ user, apiKey });
+  const models = useModels(apiKey);
 
   const [view, setView]                       = useState(VIEWS.CHAMBER);
   const [activeCouncillorId, setActiveCouncillorId] = useState(null);
@@ -137,7 +138,7 @@ function Chamber({ theme, onToggleTheme }) {
           <div>
             <div className="text-xs text-council-text-dim uppercase tracking-widest px-1 mb-1.5">Model</div>
             <div className="flex flex-col gap-1">
-              {MODELS.map(m => (
+              {models.map(m => (
                 <button
                   key={m.id}
                   onClick={() => council.setModel(m.id)}
