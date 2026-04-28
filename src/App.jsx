@@ -29,10 +29,15 @@ export default function App() {
   const { user, profile, apiKey, loading } = useAuth();
   const [theme, setTheme]                 = useState(loadTheme);
 
+  const isInApp = !loading && !!user && !!apiKey;
+
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    try { localStorage.setItem(THEME_KEY, theme); } catch {}
-  }, [theme]);
+    // Auth and unlock screens are always light mode
+    document.documentElement.setAttribute('data-theme', isInApp ? theme : 'light');
+    if (isInApp) {
+      try { localStorage.setItem(THEME_KEY, theme); } catch {}
+    }
+  }, [isInApp, theme]);
 
   // Loading auth state
   if (loading) {

@@ -87,6 +87,7 @@ function SignupForm({ onSwitch }) {
   const [name, setName]             = useState('');
   const [email, setEmail]           = useState('');
   const [password, setPassword]     = useState('');
+  const [confirm, setConfirm]       = useState('');
   const [apiKey, setApiKey]         = useState('');
   const [showKeyHelp, setShowKeyHelp] = useState(false);
   const [error, setError]           = useState('');
@@ -97,6 +98,7 @@ function SignupForm({ onSwitch }) {
     setError('');
     if (!name.trim()) return setError('Name is required.');
     if (password.length < 8) return setError('Password must be at least 8 characters.');
+    if (password !== confirm) return setError('Passwords do not match.');
     if (!apiKey.trim().startsWith('sk-ant-')) return setError('Please enter a valid Anthropic API key (starts with sk-ant-).');
     setLoading(true);
     try {
@@ -113,6 +115,7 @@ function SignupForm({ onSwitch }) {
       <Field label="Your name" type="text" value={name} onChange={setName} placeholder="Ada Lovelace" />
       <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
       <Field label="Password" type="password" value={password} onChange={setPassword} placeholder="Min. 8 characters" />
+      <Field label="Confirm password" type="password" value={confirm} onChange={setConfirm} placeholder="Type it again" />
 
       {/* API Key field */}
       <div>
