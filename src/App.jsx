@@ -62,13 +62,11 @@ export default function App() {
         {/* Logo */}
         <div className="px-5 py-5 border-b border-council-border">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-council-accent/20 border border-council-accent/30 flex items-center justify-center flex-shrink-0">
-              <span className="text-council-accent text-xs font-bold">C</span>
-            </div>
+            <img src="/favicon.svg" alt="The Council" className="w-8 h-8 flex-shrink-0" />
             <div>
               <div className="text-sm font-semibold text-council-text">The Council</div>
               <div className="text-xs text-council-text-dim">
-                {council.isLoading ? 'Deliberating...' : `${council.councillors.length} active`}
+                {council.isLoading ? 'Deliberating...' : `${council.councillors.filter(c => c.active !== false).length} active`}
               </div>
             </div>
           </div>
@@ -208,7 +206,7 @@ export default function App() {
 }
 
 function ChamberView({ council, onCardClick }) {
-  const hasResponses = Object.keys(council.councillorResponses).length > 0;
+  const activeCouncillors = council.councillors.filter(c => c.active !== false);
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
@@ -224,28 +222,26 @@ function ChamberView({ council, onCardClick }) {
       {/* Synthesis preview */}
       <SynthesisPreview synthesis={council.synthesis} />
 
-      {/* Assembly */}
-      {hasResponses && (
-        <section className="animate-fade-in space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-council-text">The Assembly</h2>
-            <span className="text-xs text-council-text-dim">
-              {council.councillors.length} active persona{council.councillors.length !== 1 ? 's' : ''}
-            </span>
-          </div>
+      {/* Assembly — always visible, only active councillors */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-council-text">The Assembly</h2>
+          <span className="text-xs text-council-text-dim">
+            {activeCouncillors.length} councillor{activeCouncillors.length !== 1 ? 's' : ''}
+          </span>
+        </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {council.councillors.map(councillor => (
-              <CouncillorCard
-                key={councillor.id}
-                councillor={councillor}
-                response={council.councillorResponses[councillor.id]}
-                onClick={onCardClick}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {activeCouncillors.map(councillor => (
+            <CouncillorCard
+              key={councillor.id}
+              councillor={councillor}
+              response={council.councillorResponses[councillor.id]}
+              onClick={onCardClick}
+            />
+          ))}
+        </div>
+      </section>
 
       {/* Chairperson synthesis */}
       {council.chairpersonResponse && (
@@ -255,14 +251,6 @@ function ChamberView({ council, onCardClick }) {
           onReply={council.askFollowUp}
           sessionCount={council.sessionLog.length + (council.chairpersonResponse.status !== 'ready' ? 1 : 0)}
         />
-      )}
-
-      {/* Empty state */}
-      {!hasResponses && !council.isLoading && (
-        <div className="text-center py-20 text-council-text-dim text-sm">
-          <div className="text-4xl mb-4">⚖️</div>
-          <div>Pose a question to convene the Council</div>
-        </div>
       )}
     </div>
   );

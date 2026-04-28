@@ -1,5 +1,5 @@
 export default function CouncillorCard({ councillor, response, onClick }) {
-  const status = response?.status ?? 'waiting';
+  const status = response?.status ?? 'idle';
   const isClickable = status === 'ready' || status === 'error';
 
   return (
@@ -36,11 +36,17 @@ export default function CouncillorCard({ councillor, response, onClick }) {
           <span className="text-xs text-council-text-dim">Deliberating</span>
         </div>
       )}
+
+      {status === 'idle' && (
+        <div className="mt-2 text-xs text-council-text-dim">Standby</div>
+      )}
     </button>
   );
 }
 
 function StatusBadge({ status }) {
+  if (status === 'idle') return null;
+
   if (status === 'waiting') {
     return (
       <span className="flex items-center gap-1 text-xs text-council-text-dim px-2 py-0.5 rounded-full border border-council-border">

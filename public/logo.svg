@@ -1,0 +1,77 @@
+<svg width="690" height="430" viewBox="0 0 690 430" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>The Council app logo</title>
+  <desc>A circular council table with five seats and a central flame, rendered in dark tones with gold accents</desc>
+
+  <rect width="680" height="420" fill="#0d0d1a" rx="16"/>
+
+  <!-- Outer decorative ring -->
+  <circle cx="340" cy="195" r="148" fill="none" stroke="#c9a84c" stroke-width="0.5" opacity="0.25"/>
+  <circle cx="340" cy="195" r="142" fill="none" stroke="#c9a84c" stroke-width="0.4" opacity="0.15"/>
+
+  <!-- Council table -->
+  <circle cx="340" cy="195" r="90" fill="#111122" stroke="#c9a84c" stroke-width="1" opacity="0.9"/>
+  <circle cx="340" cy="195" r="86" fill="none" stroke="#c9a84c" stroke-width="0.4" opacity="0.3"/>
+
+  <!-- Inner table ring detail -->
+  <circle cx="340" cy="195" r="52" fill="none" stroke="#c9a84c" stroke-width="0.5" opacity="0.2"/>
+
+  <!-- Seat 1 — top (12 o'clock) -->
+  <g transform="translate(340, 65)">
+    <circle r="18" fill="#1a1a2e" stroke="#c9a84c" stroke-width="1.2"/>
+    <circle r="14" fill="#c9a84c" opacity="0.15"/>
+    <circle r="5" fill="#c9a84c"/>
+  </g>
+
+  <!-- Seat 2 — upper right (~72deg) -->
+  <g transform="translate(464, 153)">
+    <circle r="18" fill="#1a1a2e" stroke="#c9a84c" stroke-width="1.2"/>
+    <circle r="14" fill="#c9a84c" opacity="0.15"/>
+    <circle r="5" fill="#c9a84c"/>
+  </g>
+
+  <!-- Seat 3 — lower right (~144deg) -->
+  <g transform="translate(418, 302)">
+    <circle r="18" fill="#1a1a2e" stroke="#c9a84c" stroke-width="1.2"/>
+    <circle r="14" fill="#c9a84c" opacity="0.15"/>
+    <circle r="5" fill="#c9a84c"/>
+  </g>
+
+  <!-- Seat 4 — lower left (~216deg) -->
+  <g transform="translate(262, 302)">
+    <circle r="18" fill="#1a1a2e" stroke="#c9a84c" stroke-width="1.2"/>
+    <circle r="14" fill="#c9a84c" opacity="0.15"/>
+    <circle r="5" fill="#c9a84c"/>
+  </g>
+
+  <!-- Seat 5 — upper left (~288deg) -->
+  <g transform="translate(216, 153)">
+    <circle r="18" fill="#1a1a2e" stroke="#c9a84c" stroke-width="1.2"/>
+    <circle r="14" fill="#c9a84c" opacity="0.15"/>
+    <circle r="5" fill="#c9a84c"/>
+  </g>
+
+  <!-- Connecting lines from seats to table edge -->
+  <line x1="340" y1="83" x2="340" y2="105" stroke="#c9a84c" stroke-width="0.5" opacity="0.4"/>
+  <line x1="446" y1="162" x2="426" y2="175" stroke="#c9a84c" stroke-width="0.5" opacity="0.4"/>
+  <line x1="403" y1="288" x2="390" y2="274" stroke="#c9a84c" stroke-width="0.5" opacity="0.4"/>
+  <line x1="277" y1="288" x2="290" y2="274" stroke="#c9a84c" stroke-width="0.5" opacity="0.4"/>
+  <line x1="234" y1="162" x2="254" y2="175" stroke="#c9a84c" stroke-width="0.5" opacity="0.4"/>
+
+  <!-- Central flame — outer -->
+  <path d="M340 230 C332 218 326 205 330 192 C333 182 337 176 340 168 C343 176 347 182 350 192 C354 205 348 218 340 230Z" fill="#c9a84c" opacity="0.9"/>
+  <!-- Central flame — inner -->
+  <path d="M340 223 C335 214 332 206 334 198 C336 191 338 187 340 183 C342 187 344 191 346 198 C348 206 345 214 340 223Z" fill="#fff8e0" opacity="0.95"/>
+
+  <!-- Chairperson indicator — small crown above flame -->
+  <path d="M328 165 L332 158 L340 163 L348 158 L352 165 Z" fill="#c9a84c" opacity="0.7"/>
+
+  <!-- Title -->
+  <text x="340" y="358" text-anchor="middle" font-size="28" font-weight="500" font-family="Georgia, serif" fill="#c9a84c">THE COUNCIL</text>
+
+  <!-- Subtitle rule lines -->
+  <line x1="160" y1="375" x2="270" y2="375" stroke="#c9a84c" stroke-width="0.5" opacity="0.4"/>
+  <line x1="410" y1="375" x2="520" y2="375" stroke="#c9a84c" stroke-width="0.5" opacity="0.4"/>
+
+  <!-- Subtitle -->
+  <text x="340" y="379" text-anchor="middle" font-size="10" font-family="Georgia, serif" fill="#7a6a3a">ADVISE · CHALLENGE · DECIDE</text>
+</svg>
