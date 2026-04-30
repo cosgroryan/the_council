@@ -12,6 +12,12 @@ import ChairpersonOutput from './components/ChairpersonOutput';
 import CouncillorEditor from './components/CouncillorEditor';
 import SessionLog from './components/SessionLog';
 import SynthesisPreview from './components/SynthesisPreview';
+import SharedSessionView from './components/SharedSessionView';
+
+function getShareToken() {
+  const m = window.location.pathname.match(/^\/share\/([a-zA-Z0-9_-]+)$/);
+  return m ? m[1] : null;
+}
 
 const VIEWS = {
   CHAMBER:     'chamber',
@@ -26,19 +32,78 @@ function loadTheme() {
   try { return localStorage.getItem(THEME_KEY) || 'dark'; } catch { return 'dark'; }
 }
 
+// ── Minimal URL router ────────────────────────────────────────
+function parsePath(pathname) {
+  if (pathname === '/' || pathname === '') return { view: VIEWS.CHAMBER, sessionId: null };
+  if (pathname === '/sessions') return { view: VIEWS.SESSION_LOG, sessionId: null };
+  const sessionMatch = pathname.match(/^\/sessions\/([^/]+)$/);
+  if (sessionMatch) return { view: VIEWS.SESSION_LOG, sessionId: sessionMatch[1] };
+  if (pathname === '/personas') return { view: VIEWS.PERSONAS, sessionId: null };
+  if (pathname === '/account') return { view: VIEWS.ACCOUNT, sessionId: null };
+  return { view: VIEWS.CHAMBER, sessionId: null };
+}
+
+function viewToPath(view, sessionId = null) {
+  if (view === VIEWS.SESSION_LOG) return sessionId ? `/sessions/${sessionId}` : '/sessions';
+  if (view === VIEWS.PERSONAS) return '/personas';
+  if (view === VIEWS.ACCOUNT) return '/account';
+  return '/';
+}
+
+function useRouting() {
+  const initial = parsePath(window.location.pathname);
+  const [view, setViewState]           = useState(initial.view);
+  const [expandedSessionId, setExpanded] = useState(initial.sessionId);
+
+  useEffect(() => {
+    function onPop() {
+      const { view: v, sessionId } = parsePath(window.location.pathname);
+      setViewState(v);
+      setExpanded(sessionId);
+    }
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  function navigate(newView, sessionId = null) {
+    const path = viewToPath(newView, sessionId);
+    window.history.pushState({}, '', path);
+    setViewState(newView);
+    setExpanded(sessionId);
+  }
+
+  function expandSession(sessionId) {
+    const path = `/sessions/${sessionId}`;
+    window.history.pushState({}, '', path);
+    setExpanded(sessionId);
+  }
+
+  function collapseSession() {
+    window.history.pushState({}, '', '/sessions');
+    setExpanded(null);
+  }
+
+  return { view, expandedSessionId, navigate, expandSession, collapseSession };
+}
+
 export default function App() {
+  const shareToken = getShareToken();
   const { user, profile, apiKey, loading } = useAuth();
   const [theme, setTheme]                 = useState(loadTheme);
 
   const isInApp = !loading && !!user && !!apiKey;
 
   useEffect(() => {
-    // Auth and unlock screens are always light mode
-    document.documentElement.setAttribute('data-theme', isInApp ? theme : 'light');
+    document.documentElement.setAttribute('data-theme', isInApp ? theme : 'dark');
     if (isInApp) {
       try { localStorage.setItem(THEME_KEY, theme); } catch {}
     }
   }, [isInApp, theme]);
+
+  // Public share view — no auth required
+  if (shareToken) {
+    return <SharedSessionView token={shareToken} />;
+  }
 
   // Loading auth state
   if (loading) {
@@ -62,8 +127,8 @@ function Chamber({ theme, onToggleTheme }) {
   const { user, profile, apiKey } = useAuth();
   const council = useCouncil({ user, apiKey });
   const models = useModels(apiKey);
+  const { view, expandedSessionId, navigate, expandSession, collapseSession } = useRouting();
 
-  const [view, setView]                       = useState(VIEWS.CHAMBER);
   const [activeCouncillorId, setActiveCouncillorId] = useState(null);
   const [sidebarOpen, setSidebarOpen]         = useState(false);
   const [priorSession, setPriorSession]       = useState(null);
@@ -73,20 +138,20 @@ function Chamber({ theme, onToggleTheme }) {
 
   function handleNewInquiry() {
     setPriorSession(null);
-    setView(VIEWS.CHAMBER);
+    navigate(VIEWS.CHAMBER);
     setSidebarOpen(false);
   }
 
   function handleClear() {
     council.clearSession();
     setPriorSession(null);
-    setSessionKey(k => k + 1); // remounts ChamberView, resetting draft text/files
-    setView(VIEWS.CHAMBER);
+    setSessionKey(k => k + 1);
+    navigate(VIEWS.CHAMBER);
   }
 
   function handleContinueSession(session) {
     setPriorSession(session);
-    setView(VIEWS.CHAMBER);
+    navigate(VIEWS.CHAMBER);
     setSidebarOpen(false);
   }
 
@@ -118,14 +183,14 @@ function Chamber({ theme, onToggleTheme }) {
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           <NavItem icon={<ChamberIcon />} label="Chamber"
             active={view === VIEWS.CHAMBER}
-            onClick={() => { setView(VIEWS.CHAMBER); setSidebarOpen(false); }} />
+            onClick={() => { navigate(VIEWS.CHAMBER); setSidebarOpen(false); }} />
           <NavItem icon={<LogIcon />} label="Session Log"
             active={view === VIEWS.SESSION_LOG}
             badge={council.sessionLog.length > 0 ? council.sessionLog.length : null}
-            onClick={() => { setView(VIEWS.SESSION_LOG); setSidebarOpen(false); }} />
+            onClick={() => { navigate(VIEWS.SESSION_LOG); setSidebarOpen(false); }} />
           <NavItem icon={<PersonasIcon />} label="Personas"
             active={view === VIEWS.PERSONAS}
-            onClick={() => { setView(VIEWS.PERSONAS); setSidebarOpen(false); }} />
+            onClick={() => { navigate(VIEWS.PERSONAS); setSidebarOpen(false); }} />
 
           {/* Theme toggle */}
           <div className="pt-2 mt-2 border-t border-council-border">
@@ -158,7 +223,7 @@ function Chamber({ theme, onToggleTheme }) {
 
           {/* Account button */}
           <button
-            onClick={() => { setView(VIEWS.ACCOUNT); setSidebarOpen(false); }}
+            onClick={() => { navigate(VIEWS.ACCOUNT); setSidebarOpen(false); }}
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors ${
               view === VIEWS.ACCOUNT
                 ? 'bg-council-card border border-council-border text-council-text'
@@ -204,7 +269,14 @@ function Chamber({ theme, onToggleTheme }) {
           </div>
           <div className={view !== VIEWS.SESSION_LOG ? 'hidden' : ''}>
             <div className="max-w-4xl mx-auto px-6 py-8">
-              <SessionLog sessions={council.sessionLog} onContinue={handleContinueSession} />
+              <SessionLog
+                sessions={council.sessionLog}
+                onContinue={handleContinueSession}
+                userId={user.id}
+                expandedId={expandedSessionId}
+                onExpand={expandSession}
+                onCollapse={collapseSession}
+              />
             </div>
           </div>
           <div className={view !== VIEWS.PERSONAS ? 'hidden' : ''}>

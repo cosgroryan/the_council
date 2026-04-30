@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import Markdown from 'react-markdown';
-
-const FILE_ICONS = { pdf: '📄', docx: '📝', doc: '📝', xlsx: '📊', xls: '📊', csv: '📊', txt: '📃', md: '📃', json: '📋' };
+import Markdown from './Markdown';
+import { supabase } from '../lib/supabase';
+import { exportSessionPDF } from '../lib/exportPDF.jsx';
 
 function extractSummary(content) {
   if (!content) return '';
@@ -19,9 +19,7 @@ function formatDate(ts) {
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' · ' + time;
 }
 
-export default function SessionLog({ sessions, onContinue }) {
-  const [expandedId, setExpandedId] = useState(null);
-
+export default function SessionLog({ sessions, onContinue, userId, expandedId, onExpand, onCollapse }) {
   if (sessions.length === 0) {
     return (
       <div className="text-center py-16 text-council-text-dim text-sm">
@@ -42,7 +40,7 @@ export default function SessionLog({ sessions, onContinue }) {
       </div>
 
       {expanded ? (
-        <SessionDetail session={expanded} onBack={() => setExpandedId(null)} onContinue={onContinue} />
+        <SessionDetail session={expanded} onBack={onCollapse} onContinue={onContinue} userId={userId} />
       ) : (
         <div className="space-y-2">
           {sessions.map((session, i) => (
@@ -50,7 +48,7 @@ export default function SessionLog({ sessions, onContinue }) {
               key={session.id}
               session={session}
               number={sessions.length - i}
-              onClick={() => setExpandedId(session.id)}
+              onClick={() => onExpand(session.id)}
               onContinue={onContinue}
             />
           ))}
@@ -104,13 +102,47 @@ function SessionCard({ session, number, onClick, onContinue }) {
   );
 }
 
-function SessionDetail({ session, onBack, onContinue }) {
-  const [activeCouncillor, setActiveCouncillor] = useState(null);
+function SessionDetail({ session, onBack, onContinue, userId }) {
+  const [activeCouncillor, setActiveCouncillor] = useState(null); // null = chairperson view
+  const [shareState, setShareState] = useState('idle');
+  const [exporting, setExporting] = useState(false);
 
   const formattedDate = new Date(session.timestamp).toLocaleString([], {
     month: 'long', day: 'numeric', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
+
+  const displayQuestion = session.condensedQuestion || session.question;
+
+  async function handleShare() {
+    if (shareState !== 'idle') return;
+    setShareState('loading');
+    try {
+      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+      const { error } = await supabase.from('shared_sessions').insert({
+        share_token: token,
+        session_id: session.id,
+        owner_user_id: userId,
+      });
+      if (error) throw error;
+      const url = `${window.location.origin}/share/${token}`;
+      await navigator.clipboard.writeText(url);
+      setShareState('copied');
+      setTimeout(() => setShareState('idle'), 2500);
+    } catch {
+      setShareState('error');
+      setTimeout(() => setShareState('idle'), 2500);
+    }
+  }
+
+  async function handleExport() {
+    if (exporting) return;
+    setExporting(true);
+    try { await exportSessionPDF(session); } finally { setExporting(false); }
+  }
+
+  const activeResult   = activeCouncillor ? session.results.find(r => r.id === activeCouncillor) : null;
+  const activeSnap     = activeCouncillor ? session.councillorSnapshot.find(c => c.id === activeCouncillor) : null;
 
   return (
     <div>
@@ -124,49 +156,78 @@ function SessionDetail({ session, onBack, onContinue }) {
           </svg>
           All sessions
         </button>
-        {onContinue && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => onContinue(session)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-council-accent/30 text-council-accent hover:bg-council-accent/10 transition-colors"
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-council-border text-council-text-muted hover:text-council-text hover:border-council-border-light transition-colors disabled:opacity-50"
           >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 15l4-4m0 0l-4-4m4 4H3" />
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
-            Continue from here
+            {exporting ? 'Exporting…' : 'Export PDF'}
           </button>
-        )}
+
+          <button
+            onClick={handleShare}
+            disabled={shareState !== 'idle'}
+            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-60 ${
+              shareState === 'copied'
+                ? 'border-council-accent/50 text-council-accent bg-council-accent/10'
+                : shareState === 'error'
+                  ? 'border-council-red/30 text-council-red/70'
+                  : 'border-council-border text-council-text-muted hover:text-council-text hover:border-council-border-light'
+            }`}
+          >
+            {shareState === 'copied' ? (
+              <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Link copied</>
+            ) : shareState === 'error' ? 'Error' : (
+              <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>{shareState === 'loading' ? 'Sharing…' : 'Share'}</>
+            )}
+          </button>
+
+          {onContinue && (
+            <button
+              onClick={() => onContinue(session)}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-council-accent/30 text-council-accent hover:bg-council-accent/10 transition-colors"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 15l4-4m0 0l-4-4m4 4H3" />
+              </svg>
+              Continue from here
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-council-card border border-council-border rounded-xl overflow-hidden">
         {/* Header */}
         <div className="px-6 py-5 border-b border-council-border">
           <div className="text-xs text-council-text-dim mb-2">{formattedDate}</div>
-          <div className="text-base font-semibold text-council-text">{session.question}</div>
+          <div className="text-base font-semibold text-council-text">{displayQuestion}</div>
         </div>
-
-        {/* Attached files */}
-        {session.attachedFiles?.length > 0 && (
-          <div className="px-6 py-4 border-b border-council-border/50 bg-council-surface/30">
-            <div className="text-xs text-council-text-dim uppercase tracking-widest mb-2">Context files</div>
-            <div className="space-y-1">
-              {session.attachedFiles.map((f, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs text-council-text-muted">
-                  <span className="mt-0.5 flex-shrink-0">{FILE_ICONS[f.type] ?? '📎'}</span>
-                  <span>{f.descriptor}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Councillor badges */}
         <div className="px-6 py-4 flex flex-wrap gap-2 border-b border-council-border/50">
+          {/* Chairperson badge */}
+          <button
+            onClick={() => setActiveCouncillor(null)}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
+              activeCouncillor === null
+                ? 'border-council-accent/50 text-council-accent bg-council-accent/10'
+                : 'border-council-border text-council-text-muted hover:border-council-border-light hover:text-council-text'
+            }`}
+          >
+            <span>⚖️</span>
+            <span>Chairperson</span>
+          </button>
+
           {session.results.map(r => {
             const snap = session.councillorSnapshot.find(c => c.id === r.id);
             return (
               <button
                 key={r.id}
-                onClick={() => setActiveCouncillor(activeCouncillor === r.id ? null : r.id)}
+                onClick={() => setActiveCouncillor(r.id)}
                 className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
                   r.error
                     ? 'border-council-red/30 text-council-red/70'
@@ -182,30 +243,24 @@ function SessionDetail({ session, onBack, onContinue }) {
           })}
         </div>
 
-        {/* Individual councillor output */}
-        {activeCouncillor && (() => {
-          const result = session.results.find(r => r.id === activeCouncillor);
-          const snap = session.councillorSnapshot.find(c => c.id === activeCouncillor);
-          if (!result) return null;
-          return (
-            <div className="px-6 py-4 border-b border-council-border/50 bg-council-surface/50">
-              <div className="flex items-center gap-2 mb-3">
-                <span>{snap?.emoji}</span>
-                <span className="text-xs font-semibold text-council-text-muted uppercase tracking-widest">{snap?.name}</span>
-              </div>
-              <Markdown className="prose-council text-sm text-council-text leading-relaxed">{result.content}</Markdown>
-            </div>
-          );
-        })()}
-
-        {/* Chairperson synthesis */}
-        {session.chairpersonContent && (
+        {/* Content: councillor or chairperson */}
+        {activeCouncillor && activeResult ? (
           <div className="px-6 py-5">
-            <div className="text-xs font-semibold text-council-accent uppercase tracking-widest mb-3">
-              Chairperson's Synthesis
+            <div className="flex items-center gap-2 mb-3">
+              <span>{activeSnap?.emoji}</span>
+              <span className="text-xs font-semibold text-council-text-muted uppercase tracking-widest">{activeSnap?.name}</span>
             </div>
-            <Markdown className="prose-council text-sm text-council-text leading-relaxed">{session.chairpersonContent}</Markdown>
+            <Markdown text={activeResult.content} />
           </div>
+        ) : (
+          session.chairpersonContent && (
+            <div className="px-6 py-5">
+              <div className="text-xs font-semibold text-council-accent uppercase tracking-widest mb-3">
+                Chairperson's Synthesis
+              </div>
+              <Markdown text={session.chairpersonContent} />
+            </div>
+          )
         )}
       </div>
     </div>

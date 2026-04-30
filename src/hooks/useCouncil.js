@@ -151,6 +151,7 @@ export function useCouncil({ user, apiKey }) {
         setSessionLog(data.map(s => ({
           id: s.id,
           question: s.question,
+          condensedQuestion: s.condensed_question || s.question,
           timestamp: new Date(s.created_at),
           results: s.results,
           councillorSnapshot: s.councillor_snapshot,
@@ -284,6 +285,7 @@ export function useCouncil({ user, apiKey }) {
       // Persist session to DB
       const sessionPayload = {
         question,
+        condensed_question: trimmedQuestion || question,
         councillor_snapshot: activeCouncillors.map(c => ({ id: c.id, name: c.name, emoji: c.emoji })),
         results,
         chairperson_content: chairContent,
@@ -293,6 +295,7 @@ export function useCouncil({ user, apiKey }) {
       const newLogEntry = {
         id: Date.now(),
         question,
+        condensedQuestion: trimmedQuestion || question,
         timestamp: new Date(),
         results,
         councillorSnapshot: sessionPayload.councillor_snapshot,
