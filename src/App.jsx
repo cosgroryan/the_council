@@ -291,7 +291,7 @@ function Chamber({ theme, onToggleTheme }) {
             </div>
           </div>
           <div className={view !== VIEWS.ACCOUNT ? 'hidden' : ''}>
-            <AccountView />
+            <AccountView sessionLog={council.sessionLog} />
           </div>
         </main>
       </div>

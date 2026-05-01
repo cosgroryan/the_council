@@ -54,7 +54,7 @@ async function callAPI(apiKey, model, systemPrompt, messages) {
   }
 
   const data = await response.json();
-  return data.content[0].text;
+  return { text: data.content[0].text, usage: data.usage ?? { input_tokens: 0, output_tokens: 0 } };
 }
 
 async function callAPIWithRetry(apiKey, model, systemPrompt, messages, maxRetries = 3) {
@@ -69,6 +69,13 @@ async function callAPIWithRetry(apiKey, model, systemPrompt, messages, maxRetrie
     }
   }
   throw lastErr;
+}
+
+function addUsage(acc, usage) {
+  return {
+    input_tokens:  acc.input_tokens  + (usage?.input_tokens  ?? 0),
+    output_tokens: acc.output_tokens + (usage?.output_tokens ?? 0),
+  };
 }
 
 /* ── DB helpers ─────────────────────────────────────────────── */
@@ -157,6 +164,8 @@ export function useCouncil({ user, apiKey }) {
           councillorSnapshot: s.councillor_snapshot,
           chairpersonContent: s.chairperson_content,
           attachedFiles: s.attached_files,
+          inputTokens:  s.input_tokens  ?? 0,
+          outputTokens: s.output_tokens ?? 0,
         })));
       }
     }
@@ -227,9 +236,11 @@ export function useCouncil({ user, apiKey }) {
 
     let trimmedQuestion = question;
     let fileContext = null;
+    let tokens = { input_tokens: 0, output_tokens: 0 };
 
     try {
-      const synthOutput = await callAPIWithRetry(apiKey, model, SYNTHESIZER_SYSTEM_PROMPT, synthInput);
+      const { text: synthOutput, usage: synthUsage } = await callAPIWithRetry(apiKey, model, SYNTHESIZER_SYSTEM_PROMPT, synthInput);
+      tokens = addUsage(tokens, synthUsage);
       const parsed = parseSynthesizerOutput(synthOutput);
       trimmedQuestion = parsed.trimmedQuestion || question;
       fileContext = parsed.fileContext;
@@ -251,7 +262,8 @@ export function useCouncil({ user, apiKey }) {
     const results = [];
     for (const councillor of activeCouncillors) {
       try {
-        const content = await callAPIWithRetry(apiKey, model, councillor.systemPrompt, councillorContent);
+        const { text: content, usage } = await callAPIWithRetry(apiKey, model, councillor.systemPrompt, councillorContent);
+        tokens = addUsage(tokens, usage);
         setCouncillorResponses(prev => ({ ...prev, [councillor.id]: { status: 'ready', content } }));
         results.push({ id: councillor.id, name: councillor.name, emoji: councillor.emoji, content, error: false });
       } catch (err) {
@@ -274,7 +286,8 @@ export function useCouncil({ user, apiKey }) {
     ].filter(Boolean).join('\n\n');
 
     try {
-      const chairContent = await callAPIWithRetry(apiKey, model, CHAIRPERSON_SYSTEM_PROMPT, chairUserMessage);
+      const { text: chairContent, usage: chairUsage } = await callAPIWithRetry(apiKey, model, CHAIRPERSON_SYSTEM_PROMPT, chairUserMessage);
+      tokens = addUsage(tokens, chairUsage);
       setChairpersonResponse({ status: 'ready', content: chairContent });
 
       chairpersonThreadRef.current = [
@@ -290,6 +303,8 @@ export function useCouncil({ user, apiKey }) {
         results,
         chairperson_content: chairContent,
         attached_files: attachedFiles.map(f => ({ name: f.name, type: f.type, descriptor: f.descriptor })),
+        input_tokens:  tokens.input_tokens,
+        output_tokens: tokens.output_tokens,
       };
 
       const newLogEntry = {
@@ -301,6 +316,8 @@ export function useCouncil({ user, apiKey }) {
         councillorSnapshot: sessionPayload.councillor_snapshot,
         chairpersonContent: chairContent,
         attachedFiles: sessionPayload.attached_files,
+        inputTokens:  tokens.input_tokens,
+        outputTokens: tokens.output_tokens,
       };
 
       if (user) {
@@ -330,7 +347,7 @@ export function useCouncil({ user, apiKey }) {
     ];
 
     try {
-      const content = await callAPIWithRetry(apiKey, model, CHAIRPERSON_SYSTEM_PROMPT, updatedThread);
+      const { text: content } = await callAPIWithRetry(apiKey, model, CHAIRPERSON_SYSTEM_PROMPT, updatedThread);
       chairpersonThreadRef.current = [...updatedThread, { role: 'assistant', content }];
       setChairpersonReplies(prev => prev.map(r => r.id === id ? { ...r, content, status: 'ready' } : r));
     } catch (err) {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 
-export default function AccountView() {
+export default function AccountView({ sessionLog = [] }) {
   const { user, profile, signOut } = useAuth();
 
   return (
@@ -12,10 +12,118 @@ export default function AccountView() {
       </div>
 
       <ProfileSection />
+      <UsageSection sessionLog={sessionLog} />
       <ApiKeySection />
       <SecuritySection />
       <DangerZone onSignOut={signOut} />
     </div>
+  );
+}
+
+/* ── Usage ───────────────────────────────────────────────────── */
+function fmtNum(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'k';
+  return n.toLocaleString();
+}
+
+function UsageSection({ sessionLog }) {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  let totalIn = 0, totalOut = 0, monthIn = 0, monthOut = 0;
+  for (const s of sessionLog) {
+    totalIn  += s.inputTokens  ?? 0;
+    totalOut += s.outputTokens ?? 0;
+    if (new Date(s.timestamp) >= startOfMonth) {
+      monthIn  += s.inputTokens  ?? 0;
+      monthOut += s.outputTokens ?? 0;
+    }
+  }
+
+  const total      = totalIn + totalOut;
+  const monthTotal = monthIn + monthOut;
+
+  // Last 7 days by date
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - (6 - i));
+    return { label: d.toLocaleDateString([], { weekday: 'short' }), date: d.toDateString(), tokens: 0 };
+  });
+  for (const s of sessionLog) {
+    const ds = new Date(s.timestamp).toDateString();
+    const day = days.find(d => d.date === ds);
+    if (day) day.tokens += (s.inputTokens ?? 0) + (s.outputTokens ?? 0);
+  }
+  const maxDayTokens = Math.max(...days.map(d => d.tokens), 1);
+
+  const monthName = now.toLocaleDateString([], { month: 'long', year: 'numeric' });
+
+  return (
+    <Card title="Usage">
+      <div className="space-y-5">
+        {/* All-time stats */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'All-time tokens', value: fmtNum(total) },
+            { label: 'Input tokens',    value: fmtNum(totalIn) },
+            { label: 'Output tokens',   value: fmtNum(totalOut) },
+          ].map(({ label, value }) => (
+            <div key={label} className="bg-council-surface border border-council-border rounded-lg px-3 py-3 text-center">
+              <div className="text-base font-semibold text-council-text tabular-nums">{value}</div>
+              <div className="text-[10px] text-council-text-dim mt-0.5 uppercase tracking-widest">{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* This month */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-council-text-dim uppercase tracking-widest">{monthName}</span>
+            <span className="text-xs text-council-text font-medium tabular-nums">{fmtNum(monthTotal)} tokens</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-council-surface overflow-hidden">
+            <div
+              className="h-full rounded-full bg-council-accent/60 transition-all"
+              style={{ width: total > 0 ? `${Math.min(100, (monthTotal / total) * 100)}%` : '0%' }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] text-council-text-dim/60 mt-1">
+            <span>{fmtNum(monthIn)} in</span>
+            <span>{fmtNum(monthOut)} out</span>
+          </div>
+        </div>
+
+        {/* Last 7 days bar chart */}
+        <div>
+          <div className="text-xs text-council-text-dim uppercase tracking-widest mb-2">Last 7 days</div>
+          <div className="flex items-end gap-1 h-12">
+            {days.map(({ label, tokens }) => (
+              <div key={label} className="flex-1 flex flex-col items-center gap-1">
+                <div className="w-full relative flex items-end" style={{ height: '36px' }}>
+                  <div
+                    className="w-full rounded-sm bg-council-accent/50 transition-all"
+                    style={{ height: tokens > 0 ? `${Math.max(4, (tokens / maxDayTokens) * 36)}px` : '2px', opacity: tokens > 0 ? 1 : 0.2 }}
+                    title={tokens > 0 ? `${tokens.toLocaleString()} tokens` : 'No usage'}
+                  />
+                </div>
+                <span className="text-[9px] text-council-text-dim/60 uppercase">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {total === 0 && (
+          <p className="text-xs text-council-text-dim text-center py-2">
+            Token usage will appear here after your first session.
+          </p>
+        )}
+
+        <p className="text-[10px] text-council-text-dim/60 leading-relaxed">
+          Usage is computed from sessions stored in The Council. Tokens include synthesizer, councillor, and chairperson calls per session.
+        </p>
+      </div>
+    </Card>
   );
 }
 

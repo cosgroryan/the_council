@@ -58,9 +58,17 @@ export default function SessionLog({ sessions, onContinue, userId, expandedId, o
   );
 }
 
+function fmtTokens(n) {
+  if (!n) return null;
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'k';
+  return String(n);
+}
+
 function SessionCard({ session, number, onClick, onContinue }) {
   const summary = extractSummary(session.chairpersonContent);
   const date = formatDate(session.timestamp);
+  const totalTokens = (session.inputTokens ?? 0) + (session.outputTokens ?? 0);
 
   return (
     <div className="bg-council-card border border-council-border rounded-xl hover:border-council-border-light transition-colors group">
@@ -81,6 +89,11 @@ function SessionCard({ session, number, onClick, onContinue }) {
           )}
           {session.results?.length > 0 && (
             <span>{session.results.length} councillor{session.results.length !== 1 ? 's' : ''}</span>
+          )}
+          {totalTokens > 0 && (
+            <span title={`${(session.inputTokens ?? 0).toLocaleString()} in · ${(session.outputTokens ?? 0).toLocaleString()} out`}>
+              {fmtTokens(totalTokens)} tokens
+            </span>
           )}
           <span className="ml-auto text-council-text-dim/40 group-hover:text-council-accent/60 transition-colors text-[11px]">View →</span>
         </div>
