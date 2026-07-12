@@ -33,7 +33,7 @@ async function callAPI(apiKey, model, systemPrompt, messages) {
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true',
     },
-    body: JSON.stringify({ model, max_tokens: 1024, system: systemPrompt, messages: normalized }),
+    body: JSON.stringify({ model, max_tokens: 4096, system: systemPrompt, messages: normalized }),
   });
 
   if (response.status === 429) {
